@@ -197,7 +197,7 @@ export const useSupabaseAuth = () => {
         const profile = await Promise.race([
           loadUserProfile(session.user.id),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Profile loading timeout')), 8000)
+            setTimeout(() => reject(new Error('Profile loading timeout')), 12000)
           )
         ]) as UserProfile | null;
         

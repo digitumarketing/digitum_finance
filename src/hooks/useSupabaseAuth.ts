@@ -264,6 +264,7 @@ export const useSupabaseAuth = () => {
         await handleUserSession(session);
       } else if (event === 'SIGNED_OUT') {
         console.log('User signed out, clearing state...');
+        clearTimeout(timeoutId);
         setAuthState({
           user: null,
           profile: null,
@@ -274,6 +275,9 @@ export const useSupabaseAuth = () => {
         setUsers([]);
       } else if (event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed successfully');
+        // Don't need to reload profile on token refresh
+      } else if (event === 'USER_UPDATED') {
+        console.log('User updated, may need to reload profile');
       }
     });
 

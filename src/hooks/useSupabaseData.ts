@@ -1037,7 +1037,7 @@ export const useSupabaseData = () => {
       totalReserves: 0,
       reserveGainLoss: 0,
     },
-    totalBalance: accounts.reduce((sum, account) => sum + account.convertedBalance, 0),
+    totalBalance: 0, // Will be set to remainingCompanyBalance
     accounts,
     recentTransactions: [...monthlyIncome, ...monthlyExpenses]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -1058,6 +1058,9 @@ export const useSupabaseData = () => {
   dashboardSummary.currentMonth.shahbazShare = totalIncome * 0.25;
   dashboardSummary.currentMonth.remainingCompanyBalance = dashboardSummary.currentMonth.companyShare - totalExpenses;
   dashboardSummary.currentMonth.netBalance = totalIncome - totalExpenses;
+  
+  // Set Total Account Balance to match Remaining Company Balance
+  dashboardSummary.totalBalance = dashboardSummary.currentMonth.remainingCompanyBalance;
 
   return {
     // Data

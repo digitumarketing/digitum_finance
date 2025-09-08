@@ -116,8 +116,8 @@ export const useSupabaseData = () => {
         id: account.id,
         name: account.name,
         currency: account.currency,
-        balance: parseFloat(account.balance || 0),
-        convertedBalance: parseFloat(account.converted_balance || 0),
+        balance: 0,
+        convertedBalance: 0,
         lastUpdated: account.updated_at,
         notes: account.notes || '',
       }));
@@ -692,8 +692,12 @@ export const useSupabaseData = () => {
 
       console.log('Account balance updated successfully:', id);
 
-      // Reload accounts
-      await loadAccounts();
+      // Update local state to show the new balance immediately
+      setAccounts(prev => prev.map(acc => 
+        acc.id === id 
+          ? { ...acc, balance: newBalance, convertedBalance, lastUpdated: new Date().toISOString() }
+          : acc
+      ));
     } catch (error) {
       console.error('Error in updateAccountBalance:', error);
       throw error;
@@ -722,7 +726,7 @@ export const useSupabaseData = () => {
     if (!user) return;
 
     try {
-      const convertedBalance = calculateConvertedAmount(accountData.balance, accountData.currency, exchangeRates);
+      const convertedBalance = 0; // Always start with 0 balance
 
       const { data, error } = await supabase
         .from('accounts')
@@ -730,7 +734,7 @@ export const useSupabaseData = () => {
           user_id: user.id,
           name: accountData.name,
           currency: accountData.currency,
-          balance: accountData.balance,
+          balance: 0,
           converted_balance: convertedBalance,
           notes: accountData.notes || '',
         })

@@ -702,32 +702,49 @@ export const useSupabaseData = () => {
 
   // Update account balances based on transactions
   const updateAccountBalances = useCallback(async () => {
-    if (!user || !profile?.is_active || accounts.length === 0) return;
+    if (!user || accounts.length === 0) return;
 
     try {
-      console.log('Updating account balances...');
-      // Calculate balances for each account
+      console.log('Updating account balances based on company distribution...');
+      
+      // Calculate total confirmed income (all currencies converted to PKR)
+      const totalConfirmedIncome = income
+        .filter(item => item.status === 'Received' || item.status === 'Partial')
+        .reduce((sum, item) => sum + item.splitAmountPKR, 0);
+        
+      const totalExpenses = expenses
+        .reduce((sum, item) => sum + item.convertedAmount, 0);
+        
+      // Company share after expenses (this matches dashboard logic)
+      const companyShare = totalConfirmedIncome * 0.5;
+      const remainingCompanyBalance = companyShare - totalExpenses;
+      
+      // Distribute remaining company balance across accounts based on their proportions
+      const totalAccountsOriginalBalance = accounts.reduce((sum, acc) => sum + acc.convertedBalance, 0);
+      
       for (const account of accounts) {
-        // Calculate income for this account
-        const accountIncome = income
-          .filter(item => item.account === account.name && (item.status === 'Received' || item.status === 'Partial'))
-          .reduce((sum, item) => sum + item.receivedAmount, 0);
+        let newConvertedBalance = 0;
+        
+        if (totalAccountsOriginalBalance > 0) {
+          // Proportional distribution of remaining company balance
+          const proportion = account.convertedBalance / totalAccountsOriginalBalance;
+          newConvertedBalance = Math.max(0, remainingCompanyBalance * proportion);
+        } else {
+          // Equal distribution if no original balances
+          newConvertedBalance = Math.max(0, remainingCompanyBalance / accounts.length);
+        }
+        
+        // Convert back to account currency
+        const newBalance = account.currency === 'PKR' 
+          ? newConvertedBalance 
+          : newConvertedBalance / (exchangeRates[account.currency] || 1);
 
-        // Calculate expenses for this account
-        const accountExpenses = expenses
-          .filter(item => item.account === account.name && item.paymentStatus === 'Done')
-          .reduce((sum, item) => sum + item.amount, 0);
-
-        // Calculate new balance
-        const newBalance = Math.max(0, accountIncome - accountExpenses);
-        const convertedBalance = calculateConvertedAmount(newBalance, account.currency, exchangeRates);
-
-        // Update account balance
+        // Update account balance in database
         await supabase
           .from('accounts')
           .update({
             balance: newBalance,
-            converted_balance: convertedBalance,
+            converted_balance: newConvertedBalance,
           })
           .eq('id', account.id)
           .eq('user_id', user.id);
@@ -735,11 +752,11 @@ export const useSupabaseData = () => {
 
       // Reload accounts
       await loadAccounts();
-      console.log('Account balances updated');
+      console.log('Account balances updated to match company balance distribution');
     } catch (error) {
       console.error('Error in updateAccountBalances:', error);
     }
-  }, [user, profile, accounts, income, expenses, exchangeRates]);
+  }, [user, accounts, income, expenses, exchangeRates]);
 
   // Add account
   const addAccount = useCallback(async (accountData: Omit<Account, 'id'>) => {

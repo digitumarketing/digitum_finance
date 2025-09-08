@@ -383,7 +383,7 @@ function App() {
   }
 
   // Show error state if there's a critical error
-  if (error) {
+  if (error && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center max-w-md">

@@ -112,12 +112,13 @@ export const useSupabaseData = () => {
         return;
       }
 
+      // Load accounts with their stored balances, will be recalculated after transactions load
       const accountsData = data.map(account => ({
         id: account.id,
         name: account.name,
         currency: account.currency,
-        balance: 0,
-        convertedBalance: 0,
+        balance: parseFloat(account.balance || 0),
+        convertedBalance: parseFloat(account.converted_balance || 0),
         lastUpdated: account.updated_at,
         notes: account.notes || '',
       }));
@@ -706,20 +707,80 @@ export const useSupabaseData = () => {
 
   // Update account balances based on transactions
   const updateAccountBalances = useCallback(async () => {
-    if (!user || accounts.length === 0) return;
+    if (!user || accounts.length === 0 || income.length === 0 && expenses.length === 0) return;
 
     try {
       console.log('Updating account balances based on company distribution...');
       
+      // Calculate balances for each account based on transactions
+      const accountBalances: Record<string, { balance: number; convertedBalance: number }> = {};
+      
+      // Initialize all accounts with 0 balance
+      accounts.forEach(account => {
+        accountBalances[account.name] = { balance: 0, convertedBalance: 0 };
+      });
+      
+      // Add income to accounts (only received and partial payments)
+      income.forEach(incomeItem => {
+        if (incomeItem.status === 'Received' || incomeItem.status === 'Partial') {
+          if (!accountBalances[incomeItem.account]) {
+            accountBalances[incomeItem.account] = { balance: 0, convertedBalance: 0 };
+          }
+          
+          // Add the received amount to the account
+          accountBalances[incomeItem.account].balance += incomeItem.receivedAmount;
+          accountBalances[incomeItem.account].convertedBalance += incomeItem.convertedAmount;
+        }
+      });
+      
+      // Subtract expenses from accounts (only done payments)
+      expenses.forEach(expense => {
+        if (expense.paymentStatus === 'Done') {
+          if (!accountBalances[expense.account]) {
+            accountBalances[expense.account] = { balance: 0, convertedBalance: 0 };
+          }
+          
+          // Subtract the expense amount from the account
+          accountBalances[expense.account].balance -= expense.amount;
+          accountBalances[expense.account].convertedBalance -= expense.convertedAmount;
+        }
+      });
+      
+      // Update accounts in database and local state
+      for (const [accountName, balances] of Object.entries(accountBalances)) {
+        const account = accounts.find(acc => acc.name === accountName);
+        if (account) {
+          // Update in database
+          const { error } = await supabase
+            .from('accounts')
+            .update({
+              balance: balances.balance,
+              converted_balance: balances.convertedBalance,
+            })
+            .eq('id', account.id)
+            .eq('user_id', user.id);
+          
+          if (error) {
+            console.error(`Error updating balance for ${accountName}:`, error);
+          }
+        }
+      }
+      
+      // Update local state with calculated balances
+      setAccounts(prev => 
+        prev.map(account => ({
+          ...account,
+          balance: accountBalances[account.name]?.balance || 0,
+          convertedBalance: accountBalances[account.name]?.convertedBalance || 0,
+          lastUpdated: new Date().toISOString(),
+        }))
+      );
 
-
-      // Reload accounts
-      await loadAccounts();
       console.log('Account balances refreshed');
     } catch (error) {
       console.error('Error in updateAccountBalances:', error);
     }
-  }, [user]);
+  }, [user, accounts, income, expenses, exchangeRates]);
 
   // Add account
   const addAccount = useCallback(async (accountData: Omit<Account, 'id'>) => {

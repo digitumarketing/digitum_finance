@@ -707,56 +707,15 @@ export const useSupabaseData = () => {
     try {
       console.log('Updating account balances based on company distribution...');
       
-      // Calculate total confirmed income (all currencies converted to PKR)
-      const totalConfirmedIncome = income
-        .filter(item => item.status === 'Received' || item.status === 'Partial')
-        .reduce((sum, item) => sum + item.splitAmountPKR, 0);
-        
-      const totalExpenses = expenses
-        .reduce((sum, item) => sum + item.convertedAmount, 0);
-        
-      // Company share after expenses (this matches dashboard logic)
-      const companyShare = totalConfirmedIncome * 0.5;
-      const remainingCompanyBalance = companyShare - totalExpenses;
-      
-      // Distribute remaining company balance across accounts based on their proportions
-      const totalAccountsOriginalBalance = accounts.reduce((sum, acc) => sum + acc.convertedBalance, 0);
-      
-      for (const account of accounts) {
-        let newConvertedBalance = 0;
-        
-        if (totalAccountsOriginalBalance > 0) {
-          // Proportional distribution of remaining company balance
-          const proportion = account.convertedBalance / totalAccountsOriginalBalance;
-          newConvertedBalance = Math.max(0, remainingCompanyBalance * proportion);
-        } else {
-          // Equal distribution if no original balances
-          newConvertedBalance = Math.max(0, remainingCompanyBalance / accounts.length);
-        }
-        
-        // Convert back to account currency
-        const newBalance = account.currency === 'PKR' 
-          ? newConvertedBalance 
-          : newConvertedBalance / (exchangeRates[account.currency] || 1);
 
-        // Update account balance in database
-        await supabase
-          .from('accounts')
-          .update({
-            balance: newBalance,
-            converted_balance: newConvertedBalance,
-          })
-          .eq('id', account.id)
-          .eq('user_id', user.id);
-      }
 
       // Reload accounts
       await loadAccounts();
-      console.log('Account balances updated to match company balance distribution');
+      console.log('Account balances refreshed');
     } catch (error) {
       console.error('Error in updateAccountBalances:', error);
     }
-  }, [user, accounts, income, expenses, exchangeRates]);
+  }, [user]);
 
   // Add account
   const addAccount = useCallback(async (accountData: Omit<Account, 'id'>) => {

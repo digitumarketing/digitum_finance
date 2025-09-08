@@ -18,7 +18,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storageKey: 'supabase.auth.token',
     debug: false,
     refreshTokenRetryLimit: 10,
-    sessionRefreshMarginSeconds: 3600, // Refresh 1 hour before expiry
+    sessionRefreshMarginSeconds: 7200, // Refresh 2 hours before expiry
   },
   global: {
     headers: {

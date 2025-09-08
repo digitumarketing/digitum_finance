@@ -144,20 +144,12 @@ export const useSupabaseAuth = () => {
         console.log('Initializing auth...');
         
         // Set timeout for initialization
-        timeoutId = setTimeout(() => {
-          if (mounted) {
-            console.log('Auth initialization timeout');
-            // Don't show error on timeout if session exists
-            console.log('Timeout reached, checking if session exists...');
-          }
-        }, 30000); // 30 second timeout
 
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
           console.error('Error getting session:', sessionError);
           if (mounted) {
-            clearTimeout(timeoutId);
             setAuthState(prev => ({ ...prev, isLoading: false, error: sessionError.message }));
           }
           return;
@@ -167,19 +159,16 @@ export const useSupabaseAuth = () => {
         
         if (session) {
           console.log('Session found, loading user profile...');
-          clearTimeout(timeoutId);
           await handleUserSession(session);
         } else {
           console.log('No session found, user not logged in');
           if (mounted) {
-            clearTimeout(timeoutId);
             setAuthState(prev => ({ ...prev, isLoading: false }));
           }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
         if (mounted) {
-          clearTimeout(timeoutId);
           setAuthState(prev => ({ 
             ...prev, 
             isLoading: false, 
@@ -190,10 +179,21 @@ export const useSupabaseAuth = () => {
     };
 
     const handleUserSession = async (session: any) => {
+      let profileTimeoutId: NodeJS.Timeout;
+      
       try {
         console.log('Loading user profile for:', session.user.id);
         
-        const profile = await loadUserProfile(session.user.id);
+        // Set timeout specifically for profile loading
+        const profileLoadPromise = loadUserProfile(session.user.id);
+        const timeoutPromise = new Promise<null>((_, reject) => {
+          profileTimeoutId = setTimeout(() => {
+            reject(new Error('Profile loading timeout'));
+          }, 15000); // 15 second timeout for profile
+        });
+        
+        const profile = await Promise.race([profileLoadPromise, timeoutPromise]);
+        clearTimeout(profileTimeoutId);
         
         if (!mounted) return;
         
@@ -208,22 +208,28 @@ export const useSupabaseAuth = () => {
             error: null,
           });
 
-          // Update last login in background (don't wait)
-          supabase
+          // Update last login in background (don't block main flow)
+          setTimeout(() => {
+            supabase
             .from('user_profiles')
             .update({ last_login: new Date().toISOString() })
             .eq('id', session.user.id)
             .then(() => console.log('Last login updated'))
             .catch(err => console.warn('Failed to update last login:', err));
+          }, 1000);
 
-          // Load all users if super admin (in background)
+          // Load all users if super admin (in background, don't block)
           if (profile.role === 'super_admin') {
             console.log('Loading all users for super admin...');
-            loadAllUsers().catch(err => console.warn('Failed to load users:', err));
+            setTimeout(() => {
+              loadAllUsers().catch(err => console.warn('Failed to load users:', err));
+            }, 2000);
           }
         } else {
           console.log('Profile not found or inactive, signing out...');
-          await supabase.auth.signOut();
+          clearTimeout(profileTimeoutId);
+          // Don't await signOut to prevent hanging
+          supabase.auth.signOut().catch(err => console.warn('Error signing out:', err));
           if (mounted) {
             setAuthState(prev => ({ 
               ...prev, 
@@ -233,17 +239,14 @@ export const useSupabaseAuth = () => {
           }
         }
       } catch (error) {
+        clearTimeout(profileTimeoutId);
         console.error('Error handling user session:', error);
         if (mounted) {
-          // Try to continue with session even if profile loading fails
-          console.log('Profile loading failed, but continuing with session');
-          setAuthState({
-            user: session.user,
-            profile: null,
-            session,
-            isLoading: false,
-            error: 'Profile loading failed. Some features may not be available.',
-          });
+          setAuthState(prev => ({ 
+            ...prev, 
+            isLoading: false, 
+            error: 'Failed to load user profile. Please refresh the page.' 
+          }));
         }
       }
     };
@@ -278,7 +281,6 @@ export const useSupabaseAuth = () => {
 
     return () => {
       mounted = false;
-      clearTimeout(timeoutId);
       console.log('Cleaning up auth listener...');
       subscription.unsubscribe();
     };

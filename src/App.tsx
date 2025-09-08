@@ -241,6 +241,7 @@ function AppContent() {
           <AccountsView 
             accounts={accounts}
             onUpdateBalance={updateAccountBalance}
+            totalCompanyBalance={dashboardSummary.currentMonth.remainingCompanyBalance}
           />
         );
 

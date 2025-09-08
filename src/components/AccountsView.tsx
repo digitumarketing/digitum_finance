@@ -6,9 +6,14 @@ import { Wallet, Edit, Plus, DollarSign, TrendingUp, TrendingDown, RefreshCw, Al
 interface AccountsViewProps {
   accounts: Account[];
   onUpdateBalance: (id: string, newBalance: number) => void;
+  totalCompanyBalance?: number;
 }
 
-export const AccountsView: React.FC<AccountsViewProps> = ({ accounts, onUpdateBalance }) => {
+export const AccountsView: React.FC<AccountsViewProps> = ({ 
+  accounts, 
+  onUpdateBalance, 
+  totalCompanyBalance 
+}) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBalance, setEditBalance] = useState<number>(0);
 
@@ -27,7 +32,12 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ accounts, onUpdateBa
     setEditBalance(0);
   };
 
-  const totalBalance = accounts.reduce((sum, account) => sum + account.convertedBalance, 0);
+  // Use totalCompanyBalance if provided, otherwise fallback to sum of account balances
+  const totalBalance = totalCompanyBalance !== undefined ? totalCompanyBalance : accounts.reduce((sum, account) => sum + account.convertedBalance, 0);
+
+  // Calculate remaining company balance (should match dashboard)
+  // This is passed from parent component or calculated locally
+  // For now, using totalBalance but this should be the remaining company balance
 
   // Calculate account activity indicators
   const getAccountStatus = (account: Account) => {
@@ -48,7 +58,9 @@ export const AccountsView: React.FC<AccountsViewProps> = ({ accounts, onUpdateBa
           <div className="text-right">
             <p className="text-sm text-gray-500">Total Balance (PKR)</p>
             <p className="text-3xl font-bold text-green-600">{formatCurrency(totalBalance)}</p>
-            <p className="text-xs text-gray-400 mt-1">Auto-updated from transactions</p>
+            <p className="text-xs text-gray-400 mt-1">
+              {totalCompanyBalance !== undefined ? 'Remaining company balance after expenses' : 'Sum of all account balances'}
+            </p>
           </div>
         </div>
       </div>

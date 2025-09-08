@@ -58,7 +58,7 @@ export const useSupabaseData = () => {
 
   // Load all data from Supabase
   const loadAllData = useCallback(async () => {
-    if (!user || !profile?.is_active) {
+    if (!user?.id || !profile?.is_active) {
       setIsLoading(false);
       return;
     }
@@ -67,14 +67,25 @@ export const useSupabaseData = () => {
     console.log('Starting data load for user:', user.id);
     
     try {
-      await Promise.all([
+      // Load data in batches to prevent timeout
+      console.log('Loading essential data...');
+      await Promise.allSettled([
         loadAccounts(),
         loadExchangeRates(),
+      ]);
+      
+      console.log('Loading transaction data...');
+      await Promise.allSettled([
         loadIncome(),
         loadExpenses(),
+      ]);
+      
+      console.log('Loading notifications...');
+      await Promise.allSettled([
         loadNotifications(),
         loadNotificationSettings(),
       ]);
+      
       console.log('All data loaded successfully');
     } catch (error) {
       console.error('Error loading data:', error);

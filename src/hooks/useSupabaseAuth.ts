@@ -58,7 +58,7 @@ export const useSupabaseAuth = () => {
     user: null,
     profile: null,
     session: null,
-    isLoading: true,
+    isLoading: false,
     error: null,
   });
 
@@ -134,72 +134,122 @@ export const useSupabaseAuth = () => {
 
   // Initialize auth state
   useEffect(() => {
-    let isInitialized = false;
+    let mounted = true;
+    let timeoutId: NodeJS.Timeout;
     
     const initializeAuth = async () => {
-      if (isInitialized) return;
-      isInitialized = true;
-      
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+
       try {
         console.log('Initializing auth...');
-        // Get initial session
+        
+        // Set timeout for initialization
+        timeoutId = setTimeout(() => {
+          if (mounted) {
+            console.log('Auth initialization timeout');
+            setAuthState(prev => ({ 
+              ...prev, 
+              isLoading: false, 
+              error: 'Connection timeout. Please refresh the page.' 
+            }));
+          }
+        }, 15000); // 15 second timeout
+
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
           console.error('Error getting session:', sessionError);
-          setAuthState(prev => ({ ...prev, isLoading: false, error: sessionError.message }));
+          if (mounted) {
+            clearTimeout(timeoutId);
+            setAuthState(prev => ({ ...prev, isLoading: false, error: sessionError.message }));
+          }
           return;
         }
 
         console.log('Session found:', !!session);
         
         if (session) {
-          console.log('Loading user profile for:', session.user.id);
-          // Load user profile
-          const profile = await loadUserProfile(session.user.id);
+          await handleUserSession(session);
+        } else {
+          console.log('No session found, user not logged in');
+          if (mounted) {
+            clearTimeout(timeoutId);
+            setAuthState(prev => ({ ...prev, isLoading: false }));
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          clearTimeout(timeoutId);
+          setAuthState(prev => ({ 
+            ...prev, 
+            isLoading: false, 
+            error: 'Failed to initialize. Please refresh the page.' 
+          }));
+        }
+      }
+    };
+
+    const handleUserSession = async (session: any) => {
+      try {
+        console.log('Loading user profile for:', session.user.id);
+        
+        const profile = await Promise.race([
+          loadUserProfile(session.user.id),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Profile loading timeout')), 8000)
+          )
+        ]) as UserProfile | null;
+        
+        if (!mounted) return;
+        
+        if (profile && profile.is_active) {
+          console.log('Profile loaded successfully:', profile.name);
           
-          if (profile && profile.is_active) {
-            console.log('Profile loaded successfully:', profile.name);
-            // Update last login
-            await supabase
-              .from('user_profiles')
-              .update({ last_login: new Date().toISOString() })
-              .eq('id', session.user.id);
+          clearTimeout(timeoutId);
+          setAuthState({
+            user: session.user,
+            profile,
+            session,
+            isLoading: false,
+            error: null,
+          });
 
-            setAuthState({
-              user: session.user,
-              profile: { ...profile, last_login: new Date().toISOString() },
-              session,
-              isLoading: false,
-              error: null,
-            });
+          // Update last login in background (don't wait)
+          supabase
+            .from('user_profiles')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', session.user.id)
+            .then(() => console.log('Last login updated'))
+            .catch(err => console.warn('Failed to update last login:', err));
 
-            // Load all users if super admin
-            if (profile.role === 'super_admin') {
-              console.log('Loading all users for super admin...');
-              await loadAllUsers();
-            }
-          } else {
-            console.log('Profile not found or inactive, signing out...');
-            // Profile not found or inactive
-            await supabase.auth.signOut();
+          // Load all users if super admin (in background)
+          if (profile.role === 'super_admin') {
+            console.log('Loading all users for super admin...');
+            loadAllUsers().catch(err => console.warn('Failed to load users:', err));
+          }
+        } else {
+          console.log('Profile not found or inactive, signing out...');
+          await supabase.auth.signOut();
+          if (mounted) {
+            clearTimeout(timeoutId);
             setAuthState(prev => ({ 
               ...prev, 
               isLoading: false, 
               error: profile ? 'Account is deactivated' : 'User profile not found' 
             }));
           }
-        } else {
-          console.log('No session found, user not logged in');
-          setAuthState(prev => ({ ...prev, isLoading: false }));
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
-        setAuthState(prev => ({ 
-          ...prev, 
-          isLoading: false, 
-          error: error instanceof Error ? error.message : 'Authentication error' 
-        }));
+        console.error('Error handling user session:', error);
+        if (mounted) {
+          clearTimeout(timeoutId);
+          setAuthState(prev => ({ 
+            ...prev, 
+            isLoading: false, 
+            error: 'Failed to load profile. Please try again.' 
+          }));
+        }
       }
     };
 
@@ -210,21 +260,8 @@ export const useSupabaseAuth = () => {
       console.log('Auth state changed:', event, !!session);
       
       if (event === 'SIGNED_IN' && session) {
-        console.log('User signed in, loading profile...');
-        const profile = await loadUserProfile(session.user.id);
-        if (profile && profile.is_active) {
-          setAuthState({
-            user: session.user,
-            profile,
-            session,
-            isLoading: false,
-            error: null,
-          });
-
-          if (profile.role === 'super_admin') {
-            await loadAllUsers();
-          }
-        }
+        console.log('Auth state changed: User signed in');
+        await handleUserSession(session);
       } else if (event === 'SIGNED_OUT') {
         console.log('User signed out, clearing state...');
         setAuthState({
@@ -241,6 +278,8 @@ export const useSupabaseAuth = () => {
     });
 
     return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
       console.log('Cleaning up auth listener...');
       subscription.unsubscribe();
     };

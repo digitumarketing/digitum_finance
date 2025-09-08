@@ -369,15 +369,21 @@ function App() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading Digitum Finance...</p>
+          <p className="text-gray-600 mb-2">Loading Digitum Finance...</p>
           <p className="text-sm text-gray-500 mt-2">Connecting to Supabase...</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+          >
+            Taking too long? Refresh page
+          </button>
         </div>
       </div>
     );
   }
 
   // Show error state if there's a critical error
-  if (error && !isAuthenticated) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center max-w-md">
@@ -387,10 +393,13 @@ function App() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Error</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              clearError();
+              window.location.reload();
+            }}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
-            Retry
+            Refresh Page
           </button>
         </div>
       </div>

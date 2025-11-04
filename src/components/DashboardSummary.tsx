@@ -2,6 +2,7 @@ import React from 'react';
 import { DashboardSummary as DashboardSummaryType } from '../types';
 import { formatCurrency, getMonthName } from '../utils/helpers';
 import { TrendingUp, TrendingDown, Wallet, AlertCircle, Building2, Users, PieChart, Calculator, Clock, CheckCircle, DollarSign, XCircle } from 'lucide-react';
+import { useProfitDistribution } from '../hooks/useProfitDistribution';
 
 interface DashboardSummaryProps {
   summary: DashboardSummaryType;
@@ -10,6 +11,7 @@ interface DashboardSummaryProps {
 
 export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, selectedMonth }) => {
   const { currentMonth, totalBalance } = summary;
+  const profitDistribution = useProfitDistribution(selectedMonth);
 
   const cards = [
     {
@@ -57,7 +59,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{getMonthName(selectedMonth)}</h2>
-            <p className="text-gray-600 mt-1">Financial Overview with Simple 50/50 Distribution</p>
+            <p className="text-gray-600 mt-1">Financial Overview with {profitDistribution.companyPercentage}% Company / {100 - profitDistribution.companyPercentage}% Owners Distribution</p>
           </div>
           <div className="text-left lg:text-right">
             <p className="text-sm text-gray-500">Total Account Balance</p>
@@ -224,7 +226,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Income Distribution</h3>
-              <p className="text-sm text-gray-600">Simple 50% Company / 50% Owner split</p>
+              <p className="text-sm text-gray-600">{profitDistribution.companyPercentage}% Company / {100 - profitDistribution.companyPercentage}% Owners split</p>
             </div>
           </div>
           
@@ -234,7 +236,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
                 <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
                 <div>
                   <p className="font-medium text-gray-900">Company Share</p>
-                  <p className="text-sm text-gray-600">50% for expenses & reserve</p>
+                  <p className="text-sm text-gray-600">{profitDistribution.companyPercentage}% for expenses & reserve</p>
                 </div>
               </div>
               <p className="text-lg font-bold text-blue-600">{formatCurrency(currentMonth.companyShare)}</p>
@@ -245,7 +247,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
                 <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
                 <div>
                   <p className="font-medium text-gray-900">Roshaan's Share</p>
-                  <p className="text-sm text-gray-600">25% owner distribution</p>
+                  <p className="text-sm text-gray-600">{profitDistribution.roshaanPercentage}% owner distribution</p>
                 </div>
               </div>
               <p className="text-lg font-bold text-purple-600">{formatCurrency(currentMonth.roshaanShare)}</p>
@@ -256,7 +258,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
                 <div className="w-4 h-4 bg-orange-500 rounded-full"></div>
                 <div>
                   <p className="font-medium text-gray-900">Shahbaz's Share</p>
-                  <p className="text-sm text-gray-600">25% owner distribution</p>
+                  <p className="text-sm text-gray-600">{profitDistribution.shahbazPercentage}% owner distribution</p>
                 </div>
               </div>
               <p className="text-lg font-bold text-orange-600">{formatCurrency(currentMonth.shahbazShare)}</p>
@@ -265,26 +267,26 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
             {/* Visual Distribution Bar */}
             <div className="mt-4">
               <div className="flex h-4 rounded-lg overflow-hidden">
-                <div 
-                  className="bg-blue-500" 
-                  style={{ width: '50%' }}
+                <div
+                  className="bg-blue-500"
+                  style={{ width: `${profitDistribution.companyPercentage}%` }}
                   title={`Company: ${formatCurrency(currentMonth.companyShare)}`}
                 ></div>
-                <div 
-                  className="bg-purple-500" 
-                  style={{ width: '25%' }}
+                <div
+                  className="bg-purple-500"
+                  style={{ width: `${profitDistribution.roshaanPercentage}%` }}
                   title={`Roshaan: ${formatCurrency(currentMonth.roshaanShare)}`}
                 ></div>
-                <div 
-                  className="bg-orange-500" 
-                  style={{ width: '25%' }}
+                <div
+                  className="bg-orange-500"
+                  style={{ width: `${profitDistribution.shahbazPercentage}%` }}
                   title={`Shahbaz: ${formatCurrency(currentMonth.shahbazShare)}`}
                 ></div>
               </div>
               <div className="flex justify-between text-xs text-gray-500 mt-2">
-                <span>Company (50%)</span>
-                <span>Roshaan (25%)</span>
-                <span>Shahbaz (25%)</span>
+                <span>Company ({profitDistribution.companyPercentage}%)</span>
+                <span>Roshaan ({profitDistribution.roshaanPercentage}%)</span>
+                <span>Shahbaz ({profitDistribution.shahbazPercentage}%)</span>
               </div>
             </div>
           </div>
@@ -304,7 +306,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
           
           <div className="space-y-4">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Company Share (50%)</span>
+              <span className="text-gray-600">Company Share ({profitDistribution.companyPercentage}%)</span>
               <span className="font-semibold text-blue-600">{formatCurrency(currentMonth.companyShare)}</span>
             </div>
             
@@ -347,9 +349,9 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
                 <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5" />
                 <div className="text-sm text-blue-800">
                   <p className="font-medium mb-1">Distribution Logic:</p>
-                  <p>• Owner shares (50% total) are not affected by company expenses</p>
-                  <p>• All expenses are paid from the Company Share (50%)</p>
-                  <p>• Simple 50/50 split applied to all currencies after PKR conversion</p>
+                  <p>• Owner shares ({100 - profitDistribution.companyPercentage}% total) are not affected by company expenses</p>
+                  <p>• All expenses are paid from the Company Share ({profitDistribution.companyPercentage}%)</p>
+                  <p>• Distribution split applied to all currencies after PKR conversion</p>
                 </div>
               </div>
             </div>
@@ -377,7 +379,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
                 <p className="text-2xl font-bold text-purple-600">{formatCurrency(currentMonth.roshaanShare)}</p>
               </div>
               <div className="text-left sm:text-right">
-                <p className="text-sm text-gray-500">25% of total income</p>
+                <p className="text-sm text-gray-500">{profitDistribution.roshaanPercentage}% of total income</p>
                 <p className="text-xs text-gray-400">Auto-calculated</p>
               </div>
             </div>
@@ -390,7 +392,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
                 <p className="text-2xl font-bold text-orange-600">{formatCurrency(currentMonth.shahbazShare)}</p>
               </div>
               <div className="text-left sm:text-right">
-                <p className="text-sm text-gray-500">25% of total income</p>
+                <p className="text-sm text-gray-500">{profitDistribution.roshaanPercentage}% of total income</p>
                 <p className="text-xs text-gray-400">Auto-calculated</p>
               </div>
             </div>

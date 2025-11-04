@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Income, Expense } from '../types';
 import { formatCurrency, exportToCSV, getMonthName, formatDate } from '../utils/helpers';
 import { Download, FileText, TrendingUp, TrendingDown, PieChart, Filter, Calendar, DollarSign, Building2, Tag, User, BarChart3 } from 'lucide-react';
+import { useProfitDistribution } from '../hooks/useProfitDistribution';
 
 interface ReportsViewProps {
   income: Income[];
@@ -11,13 +12,14 @@ interface ReportsViewProps {
   selectedMonth: string;
 }
 
-export const ReportsView: React.FC<ReportsViewProps> = ({ 
-  income, 
-  expenses, 
-  allIncome, 
-  allExpenses, 
-  selectedMonth 
+export const ReportsView: React.FC<ReportsViewProps> = ({
+  income,
+  expenses,
+  allIncome,
+  allExpenses,
+  selectedMonth
 }) => {
+  const profitDistribution = useProfitDistribution(selectedMonth);
   const [dateFilter, setDateFilter] = useState<string>('current-month');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [accountFilter, setAccountFilter] = useState<string>('all');
@@ -145,13 +147,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     const totalIncome = filteredIncome
       .filter(item => item.status === 'Received' || item.status === 'Partial')
       .reduce((sum, item) => sum + item.splitAmountPKR, 0);
-    
+
     const totalExpenses = filteredExpenses.reduce((sum, item) => sum + item.convertedAmount, 0);
     const netProfit = totalIncome - totalExpenses;
-    
-    const companyShare = totalIncome * 0.5;
-    const roshaanShare = totalIncome * 0.25;
-    const shahbazShare = totalIncome * 0.25;
+
+    const companyShare = totalIncome * (profitDistribution.companyPercentage / 100);
+    const roshaanShare = totalIncome * (profitDistribution.roshaanPercentage / 100);
+    const shahbazShare = totalIncome * (profitDistribution.shahbazPercentage / 100);
     const remainingCompanyBalance = companyShare - totalExpenses;
 
     // Category breakdowns
@@ -207,7 +209,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       expensesByAccount,
       currencyBreakdown,
     };
-  }, [filteredIncome, filteredExpenses]);
+  }, [filteredIncome, filteredExpenses, profitDistribution]);
 
   // Export functions
   const handleExportIncome = () => {
@@ -223,9 +225,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       'PKR Equivalent': item.convertedAmount,
       'Split Amount PKR': item.splitAmountPKR,
       'Rate Used': item.splitRateUsed,
-      'Company Share (50%)': item.splitAmountPKR * 0.5,
-      'Roshaan Share (25%)': item.splitAmountPKR * 0.25,
-      'Shahbaz Share (25%)': item.splitAmountPKR * 0.25,
+      [`Company Share (${profitDistribution.companyPercentage}%)`]: item.splitAmountPKR * (profitDistribution.companyPercentage / 100),
+      [`Roshaan Share (${profitDistribution.roshaanPercentage}%)`]: item.splitAmountPKR * (profitDistribution.roshaanPercentage / 100),
+      [`Shahbaz Share (${profitDistribution.shahbazPercentage}%)`]: item.splitAmountPKR * (profitDistribution.shahbazPercentage / 100),
       Status: item.status,
       Notes: item.notes || '',
       'Created At': formatDate(item.createdAt)
@@ -284,10 +286,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       'Total Income (PKR)': analytics.totalIncome,
       'Total Expenses (PKR)': analytics.totalExpenses,
       'Net Profit/Loss (PKR)': analytics.netProfit,
-      'Company Share (50%)': analytics.companyShare,
+      [`Company Share (${profitDistribution.companyPercentage}%)`]: analytics.companyShare,
       'Company Balance After Expenses': analytics.remainingCompanyBalance,
-      'Roshaan Share (25%)': analytics.roshaanShare,
-      'Shahbaz Share (25%)': analytics.shahbazShare,
+      [`Roshaan Share (${profitDistribution.roshaanPercentage}%)`]: analytics.roshaanShare,
+      [`Shahbaz Share (${profitDistribution.shahbazPercentage}%)`]: analytics.shahbazShare,
       'Income Transactions': filteredIncome.filter(i => i.status === 'Received' || i.status === 'Partial').length,
       'Expense Transactions': filteredExpenses.length,
       'Profit Margin %': analytics.totalIncome > 0 ? ((analytics.netProfit / analytics.totalIncome) * 100).toFixed(2) + '%' : '0%',

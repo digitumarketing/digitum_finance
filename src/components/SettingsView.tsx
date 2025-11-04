@@ -6,7 +6,8 @@ import { UserManagement } from './UserManagement';
 import { DataManagement } from './DataManagement';
 import { ExchangeRates, Account, NotificationSettings as NotificationSettingsType } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
-import { Settings, DollarSign, Building2, Bell, Database, Users, Crown } from 'lucide-react';
+import { Settings, DollarSign, Building2, Bell, Database, Users, Crown, PieChart } from 'lucide-react';
+import { ProfitDistributionSettings } from './ProfitDistributionSettings';
 
 interface SettingsViewProps {
   exchangeRates: ExchangeRates;
@@ -20,7 +21,7 @@ interface SettingsViewProps {
   onRequestNotificationPermission: () => Promise<boolean>;
 }
 
-type SettingsSection = 'exchange-rates' | 'accounts' | 'notifications' | 'users' | 'data';
+type SettingsSection = 'exchange-rates' | 'accounts' | 'notifications' | 'profit-distribution' | 'users' | 'data';
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ 
   exchangeRates, 
@@ -56,6 +57,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       name: 'Notifications',
       icon: Bell,
       description: 'Configure alerts and reminders',
+      requiredRole: null
+    },
+    {
+      id: 'profit-distribution' as SettingsSection,
+      name: 'Profit Distribution',
+      icon: PieChart,
+      description: 'Configure company and owner profit split ratios',
       requiredRole: null
     },
     {
@@ -119,8 +127,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       case 'users':
         return <UserManagement />;
 
-      case 'users':
-        return <UserManagement />;
+      case 'profit-distribution':
+        return <ProfitDistributionSettings />;
       
       case 'data':
         return <DataManagement />;

@@ -30,6 +30,65 @@ export const useSupabaseData = () => {
   });
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth());
   const [isLoading, setIsLoading] = useState(true);
+  const [profitDistribution, setProfitDistribution] = useState({
+    companyPercentage: 50,
+    roshaanPercentage: 25,
+    shahbazPercentage: 25
+  });
+
+  // Load profit distribution settings for selected month
+  useEffect(() => {
+    const loadProfitDistribution = async () => {
+      if (!user || !selectedMonth) {
+        setProfitDistribution({
+          companyPercentage: 50,
+          roshaanPercentage: 25,
+          shahbazPercentage: 25
+        });
+        return;
+      }
+
+      const [year, month] = selectedMonth.split('-').map(Number);
+
+      try {
+        const { data, error } = await supabase
+          .from('profit_distribution_settings')
+          .select('company_percentage, roshaan_percentage, shahbaz_percentage')
+          .eq('user_id', user.id)
+          .eq('year', year)
+          .eq('month', month)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching profit distribution:', error);
+          return;
+        }
+
+        if (data) {
+          setProfitDistribution({
+            companyPercentage: Number(data.company_percentage),
+            roshaanPercentage: Number(data.roshaan_percentage),
+            shahbazPercentage: Number(data.shahbaz_percentage)
+          });
+        } else {
+          setProfitDistribution({
+            companyPercentage: 50,
+            roshaanPercentage: 25,
+            shahbazPercentage: 25
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching profit distribution:', err);
+        setProfitDistribution({
+          companyPercentage: 50,
+          roshaanPercentage: 25,
+          shahbazPercentage: 25
+        });
+      }
+    };
+
+    loadProfitDistribution();
+  }, [user, selectedMonth]);
 
   // Load all data when user changes
   useEffect(() => {
@@ -1091,12 +1150,12 @@ export const useSupabaseData = () => {
     unreadNotifications: notifications.filter(n => !n.isRead).length,
   };
 
-  // Calculate derived values
+  // Calculate derived values using custom profit distribution
   const totalIncome = dashboardSummary.currentMonth.totalIncome;
   const totalExpenses = dashboardSummary.currentMonth.totalExpenses;
-  dashboardSummary.currentMonth.companyShare = totalIncome * 0.5;
-  dashboardSummary.currentMonth.roshaanShare = totalIncome * 0.25;
-  dashboardSummary.currentMonth.shahbazShare = totalIncome * 0.25;
+  dashboardSummary.currentMonth.companyShare = totalIncome * (profitDistribution.companyPercentage / 100);
+  dashboardSummary.currentMonth.roshaanShare = totalIncome * (profitDistribution.roshaanPercentage / 100);
+  dashboardSummary.currentMonth.shahbazShare = totalIncome * (profitDistribution.shahbazPercentage / 100);
   dashboardSummary.currentMonth.remainingCompanyBalance = dashboardSummary.currentMonth.companyShare - totalExpenses;
   dashboardSummary.currentMonth.netBalance = totalIncome - totalExpenses;
   

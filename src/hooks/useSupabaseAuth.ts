@@ -71,10 +71,15 @@ export const useSupabaseAuth = () => {
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error loading user profile:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.log('No user profile found for:', userId);
         return null;
       }
 

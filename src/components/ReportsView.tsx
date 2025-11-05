@@ -1,8 +1,23 @@
 import React, { useState, useMemo } from 'react';
 import { Income, Expense } from '../types';
 import { formatCurrency, exportToCSV, getMonthName, formatDate } from '../utils/helpers';
-import { Download, FileText, TrendingUp, TrendingDown, PieChart, Filter, Calendar, DollarSign, Building2, Tag, User, BarChart3 } from 'lucide-react';
+import { Download, FileText, TrendingUp, TrendingDown, PieChart as PieChartIcon, Filter, Calendar, DollarSign, Building2, Tag, User, BarChart3 } from 'lucide-react';
 import { useProfitDistribution } from '../hooks/useProfitDistribution';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from 'recharts';
 
 interface ReportsViewProps {
   income: Income[];
@@ -219,6 +234,54 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       currencyBreakdown,
     };
   }, [filteredIncome, filteredExpenses, profitDistribution]);
+
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+
+  const chartData = useMemo(() => {
+    const monthlyData: Record<string, { month: string; income: number; expenses: number }> = {};
+
+    filteredIncome.forEach(item => {
+      if (item.status === 'Received' || item.status === 'Partial') {
+        const month = item.date.substring(0, 7);
+        if (!monthlyData[month]) {
+          monthlyData[month] = { month, income: 0, expenses: 0 };
+        }
+        monthlyData[month].income += item.splitAmountPKR;
+      }
+    });
+
+    filteredExpenses.forEach(item => {
+      const month = item.date.substring(0, 7);
+      if (!monthlyData[month]) {
+        monthlyData[month] = { month, income: 0, expenses: 0 };
+      }
+      monthlyData[month].expenses += item.convertedAmount;
+    });
+
+    return Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
+  }, [filteredIncome, filteredExpenses]);
+
+  const incomeCategoryChartData = Object.entries(analytics.incomeByCategory).map(([name, value]) => ({
+    name,
+    value
+  }));
+
+  const expenseCategoryChartData = Object.entries(analytics.expensesByCategory).map(([name, value]) => ({
+    name,
+    value
+  }));
+
+  const profitDistributionData = [
+    { name: `Company (${profitDistribution.companyPercentage}%)`, value: analytics.companyShare },
+    { name: `Roshaan (${profitDistribution.roshaanPercentage}%)`, value: analytics.roshaanShare },
+    { name: `Shahbaz (${profitDistribution.shahbazPercentage}%)`, value: analytics.shahbazShare }
+  ];
+
+  const incomeVsExpenseData = [
+    { name: 'Income', value: analytics.totalIncome, color: '#10b981' },
+    { name: 'Expenses', value: analytics.totalExpenses, color: '#ef4444' },
+    { name: 'Net Profit', value: analytics.netProfit, color: analytics.netProfit >= 0 ? '#3b82f6' : '#f59e0b' }
+  ];
 
   // Export functions
   const handleExportIncome = () => {
@@ -590,86 +653,253 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         </button>
       </div>
 
-      {/* Analytics Charts */}
+      {/* Visual Analytics Charts */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-2 bg-blue-50 rounded-lg">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Income vs Expenses Over Time</h3>
+        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis dataKey="month" stroke="#6b7280" />
+            <YAxis stroke="#6b7280" />
+            <Tooltip
+              formatter={(value: number) => formatCurrency(value)}
+              contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+            />
+            <Legend />
+            <Line type="monotone" dataKey="income" stroke="#10b981" strokeWidth={2} name="Income" />
+            <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} name="Expenses" />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Income vs Expenses Bar Chart */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-2 bg-blue-50 rounded-lg">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Financial Overview</h3>
+        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={incomeVsExpenseData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis dataKey="name" stroke="#6b7280" />
+            <YAxis stroke="#6b7280" />
+            <Tooltip
+              formatter={(value: number) => formatCurrency(value)}
+              contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+            />
+            <Bar dataKey="value" name="Amount">
+              {incomeVsExpenseData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Pie Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Income by Category */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="p-2 bg-green-50 rounded-lg">
-              <PieChart className="w-5 h-5 text-green-600" />
+              <PieChartIcon className="w-5 h-5 text-green-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900">Income by Category</h3>
           </div>
-          <div className="space-y-3">
-            {Object.entries(analytics.incomeByCategory).map(([category, amount]) => {
-              const percentage = analytics.totalIncome > 0 ? (amount / analytics.totalIncome) * 100 : 0;
-              return (
-                <div key={category} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm text-gray-700">{category}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900">
-                      {formatCurrency(amount)}
+          {incomeCategoryChartData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={incomeCategoryChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {incomeCategoryChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-4 space-y-2">
+                {Object.entries(analytics.incomeByCategory).map(([category, amount], index) => {
+                  const percentage = analytics.totalIncome > 0 ? (amount / analytics.totalIncome) * 100 : 0;
+                  return (
+                    <div key={category} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                        <span className="text-gray-700">{category}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-medium text-gray-900">{formatCurrency(amount)}</span>
+                        <span className="text-gray-500 ml-2">({percentage.toFixed(1)}%)</span>
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500">
-                      {percentage.toFixed(1)}%
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <p className="text-gray-500 text-center py-8">No income data available</p>
+          )}
         </div>
 
         {/* Expenses by Category */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="p-2 bg-red-50 rounded-lg">
-              <PieChart className="w-5 h-5 text-red-600" />
+              <PieChartIcon className="w-5 h-5 text-red-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900">Expenses by Category</h3>
           </div>
-          <div className="space-y-3">
-            {Object.entries(analytics.expensesByCategory).map(([category, amount]) => {
-              const percentage = analytics.totalExpenses > 0 ? (amount / analytics.totalExpenses) * 100 : 0;
-              return (
-                <div key={category} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="text-sm text-gray-700">{category}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900">
-                      {formatCurrency(amount)}
+          {expenseCategoryChartData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={expenseCategoryChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {expenseCategoryChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-4 space-y-2">
+                {Object.entries(analytics.expensesByCategory).map(([category, amount], index) => {
+                  const percentage = analytics.totalExpenses > 0 ? (amount / analytics.totalExpenses) * 100 : 0;
+                  return (
+                    <div key={category} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                        <span className="text-gray-700">{category}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-medium text-gray-900">{formatCurrency(amount)}</span>
+                        <span className="text-gray-500 ml-2">({percentage.toFixed(1)}%)</span>
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500">
-                      {percentage.toFixed(1)}%
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <p className="text-gray-500 text-center py-8">No expense data available</p>
+          )}
         </div>
       </div>
+
+      {/* Profit Distribution Chart */}
+      {profitDistributionData.some(d => d.value > 0) && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <User className="w-5 h-5 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">Profit Distribution</h3>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={profitDistributionData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  <Cell fill="#3b82f6" />
+                  <Cell fill="#10b981" />
+                  <Cell fill="#f59e0b" />
+                </Pie>
+                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex flex-col justify-center space-y-4">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-900">Company Share</span>
+                  <span className="text-sm text-blue-600">{profitDistribution.companyPercentage}%</span>
+                </div>
+                <p className="text-xl font-bold text-blue-600 mt-1">{formatCurrency(analytics.companyShare)}</p>
+                <p className="text-sm text-blue-700 mt-1">After expenses: {formatCurrency(analytics.remainingCompanyBalance)}</p>
+              </div>
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-green-900">Roshaan Share</span>
+                  <span className="text-sm text-green-600">{profitDistribution.roshaanPercentage}%</span>
+                </div>
+                <p className="text-xl font-bold text-green-600 mt-1">{formatCurrency(analytics.roshaanShare)}</p>
+              </div>
+              <div className="bg-orange-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-orange-900">Shahbaz Share</span>
+                  <span className="text-sm text-orange-600">{profitDistribution.shahbazPercentage}%</span>
+                </div>
+                <p className="text-xl font-bold text-orange-600 mt-1">{formatCurrency(analytics.shahbazShare)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Currency Breakdown */}
       {Object.keys(analytics.currencyBreakdown).length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center space-x-3 mb-4">
+          <div className="flex items-center space-x-3 mb-6">
             <div className="p-2 bg-purple-50 rounded-lg">
               <DollarSign className="w-5 h-5 text-purple-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900">Currency Analysis</h3>
           </div>
+          <div className="mb-6">
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={Object.entries(analytics.currencyBreakdown).map(([currency, data]) => ({
+                currency,
+                amount: data.pkrAmount,
+                count: data.count
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="currency" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
+                <Tooltip
+                  formatter={(value: number) => formatCurrency(value)}
+                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                />
+                <Bar dataKey="amount" fill="#8b5cf6" name="PKR Value" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {Object.entries(analytics.currencyBreakdown).map(([currency, data]) => (
-              <div key={currency} className="bg-purple-50 rounded-lg p-4">
+              <div key={currency} className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-purple-900">{currency}</span>
-                  <span className="text-sm text-purple-600">{data.count} transactions</span>
+                  <span className="text-sm text-purple-600">{data.count} txns</span>
                 </div>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">

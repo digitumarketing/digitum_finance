@@ -70,10 +70,10 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({ selectedMonth, onM
         {/* Main Selector Button */}
         <button
           onClick={() => setShowPicker(!showPicker)}
-          className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors min-w-0 flex-1 sm:min-w-[180px] sm:flex-initial"
+          className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors min-w-[180px]"
         >
           <Calendar className="w-4 h-4 text-green-600 flex-shrink-0" />
-          <span className="font-medium text-gray-900 truncate">
+          <span className="font-medium text-gray-900 whitespace-nowrap">
             {getMonthName(selectedMonth)}
           </span>
           <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${

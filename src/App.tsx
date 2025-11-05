@@ -116,30 +116,42 @@ function AppContent() {
         return (
           <div className="space-y-6">
             <DashboardSummary summary={dashboardSummary} selectedMonth={selectedMonth} />
-            
-            {/* Recent Transactions */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
-              <DataTable 
-                data={dashboardSummary.recentTransactions} 
-                type={dashboardSummary.recentTransactions[0] && 'clientName' in dashboardSummary.recentTransactions[0] ? 'income' : 'expense'}
-                onDelete={(id) => {
-                  const isIncome = dashboardSummary.recentTransactions.find(t => t.id === id && 'clientName' in t);
-                  if (isIncome) {
-                    deleteIncome(id);
-                  } else {
-                    deleteExpense(id);
-                  }
-                }}
-                onEdit={(item) => {
-                  if ('clientName' in item) {
-                    handleEditIncome(item);
-                  } else {
-                    handleEditExpense(item);
-                  }
-                }}
-                exchangeRates={exchangeRates}
-              />
+
+            {/* Recent Transactions - Separate Income and Expenses */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Income */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Recent Income</h3>
+                  <span className="text-sm text-green-600 font-medium">
+                    {income.slice(0, 5).length} transactions
+                  </span>
+                </div>
+                <DataTable
+                  data={income.slice(0, 5)}
+                  type="income"
+                  onDelete={deleteIncome}
+                  onEdit={handleEditIncome}
+                  exchangeRates={exchangeRates}
+                />
+              </div>
+
+              {/* Recent Expenses */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Recent Expenses</h3>
+                  <span className="text-sm text-red-600 font-medium">
+                    {expenses.slice(0, 5).length} transactions
+                  </span>
+                </div>
+                <DataTable
+                  data={expenses.slice(0, 5)}
+                  type="expense"
+                  onDelete={deleteExpense}
+                  onEdit={handleEditExpense}
+                  exchangeRates={exchangeRates}
+                />
+              </div>
             </div>
           </div>
         );

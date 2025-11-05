@@ -21,6 +21,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 }) => {
   const profitDistribution = useProfitDistribution(selectedMonth);
   const [dateFilter, setDateFilter] = useState<string>('current-month');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [accountFilter, setAccountFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -103,7 +105,14 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         filteredIncome = allIncome.filter(item => item.date >= lastQuarterStartString && item.date <= lastQuarterEndString);
         filteredExpenses = allExpenses.filter(item => item.date >= lastQuarterStartString && item.date <= lastQuarterEndString);
         break;
-      
+
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          filteredIncome = allIncome.filter(item => item.date >= customStartDate && item.date <= customEndDate);
+          filteredExpenses = allExpenses.filter(item => item.date >= customStartDate && item.date <= customEndDate);
+        }
+        break;
+
       case 'all-time':
       default:
         // No filtering for all-time
@@ -276,6 +285,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         case 'last-90-days': return 'Last 90 Days';
         case 'this-quarter': return 'This Quarter';
         case 'last-quarter': return 'Last Quarter';
+        case 'custom': return `Custom Range (${formatDate(customStartDate)} - ${formatDate(customEndDate)})`;
         case 'all-time': return 'All Time';
         default: return 'Custom Range';
       }
@@ -339,6 +349,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               <option value="last-quarter">Last Quarter</option>
               <option value="current-year">Current Year</option>
               <option value="last-year">Last Year</option>
+              <option value="custom">Custom Date Range</option>
               <option value="all-time">All Time</option>
             </select>
           </div>
@@ -387,6 +398,40 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
         </div>
 
+        {/* Custom Date Range Inputs */}
+        {dateFilter === 'custom' && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center space-x-3 mb-3">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              <h4 className="text-sm font-semibold text-blue-900">Custom Date Range</h4>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  min={customStartDate}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            {customStartDate && customEndDate && customStartDate > customEndDate && (
+              <p className="mt-2 text-sm text-red-600">End date must be after start date</p>
+            )}
+          </div>
+        )}
+
         {/* Filter Summary */}
         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
           <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
@@ -402,6 +447,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                dateFilter === 'last-quarter' ? 'Last Quarter' :
                dateFilter === 'current-year' ? 'Current Year' :
                dateFilter === 'last-year' ? 'Last Year' :
+               dateFilter === 'custom' ? `Custom (${formatDate(customStartDate)} - ${formatDate(customEndDate)})` :
                dateFilter === 'all-time' ? 'All Time' : 'Custom'}
             </span>
             {categoryFilter !== 'all' && (

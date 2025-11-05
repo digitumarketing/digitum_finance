@@ -310,10 +310,10 @@ function AppContent() {
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex-1 flex flex-col lg:ml-0 overflow-x-hidden">
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-100 p-4 lg:p-6 pt-16 lg:pt-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 max-w-full">
             <div className="flex items-center space-x-4">
               <div>
                 <h1 className="text-xl font-semib old text-gray-900">
@@ -325,7 +325,7 @@ function AppContent() {
                 <span className="text-sm text-blue-600 font-medium">Supabase Database</span>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-shrink-0">
               {/* Notification Panel */}
               <NotificationPanel
                 notifications={notifications}
@@ -335,11 +335,11 @@ function AppContent() {
                 onDelete={deleteNotification}
                 onClearAll={clearAllNotifications}
               />
-              
+
               {/* Month Selector */}
               {activeTab !== 'settings' && (
-                <div className="w-full sm:w-80">
-                  <MonthSelector 
+                <div className="flex-shrink-0">
+                  <MonthSelector
                     selectedMonth={selectedMonth}
                     onMonthChange={setSelectedMonth}
                   />
@@ -353,7 +353,7 @@ function AppContent() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6">
+        <main className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6 max-w-full overflow-x-hidden">
           {renderMainContent()}
         </main>
       </div>

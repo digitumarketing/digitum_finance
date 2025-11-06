@@ -1118,6 +1118,47 @@ export const useSupabaseData = () => {
     }
   }, [user]);
 
+  // Bulk import functions
+  const bulkImportIncome = useCallback(async (incomeDataArray: any[]) => {
+    if (!user) return;
+
+    try {
+      console.log(`Starting bulk import of ${incomeDataArray.length} income records...`);
+
+      const importPromises = incomeDataArray.map(incomeData => addIncome(incomeData));
+      await Promise.all(importPromises);
+
+      console.log('Bulk income import completed successfully');
+
+      // Reload all data
+      await loadIncome();
+      await updateAccountBalances();
+    } catch (error) {
+      console.error('Error in bulkImportIncome:', error);
+      throw error;
+    }
+  }, [user, addIncome, loadIncome, updateAccountBalances]);
+
+  const bulkImportExpenses = useCallback(async (expenseDataArray: any[]) => {
+    if (!user) return;
+
+    try {
+      console.log(`Starting bulk import of ${expenseDataArray.length} expense records...`);
+
+      const importPromises = expenseDataArray.map(expenseData => addExpense(expenseData));
+      await Promise.all(importPromises);
+
+      console.log('Bulk expense import completed successfully');
+
+      // Reload all data
+      await loadExpenses();
+      await updateAccountBalances();
+    } catch (error) {
+      console.error('Error in bulkImportExpenses:', error);
+      throw error;
+    }
+  }, [user, addExpense, loadExpenses, updateAccountBalances]);
+
   // Filter data by selected month
   const monthlyIncome = income.filter(item => item.date.startsWith(selectedMonth));
   const monthlyExpenses = expenses.filter(item => item.date.startsWith(selectedMonth));
@@ -1200,6 +1241,8 @@ export const useSupabaseData = () => {
     deleteAccount,
     setExchangeRates: updateExchangeRates,
     setSelectedMonth,
+    bulkImportIncome,
+    bulkImportExpenses,
     
     // Notification actions
     unreadNotifications: notifications.filter(n => !n.isRead).length,

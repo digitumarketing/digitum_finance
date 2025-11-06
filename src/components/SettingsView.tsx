@@ -4,6 +4,7 @@ import { DynamicAccountManagement } from './DynamicAccountManagement';
 import { NotificationSettings } from './NotificationSettings';
 import { UserManagement } from './UserManagement';
 import { DataManagement } from './DataManagement';
+import { DataImport } from './DataImport';
 import { ExchangeRates, Account, NotificationSettings as NotificationSettingsType } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { Settings, DollarSign, Building2, Bell, Database, Users, Crown, PieChart } from 'lucide-react';
@@ -19,20 +20,24 @@ interface SettingsViewProps {
   notificationSettings: NotificationSettingsType;
   onUpdateNotificationSettings: (settings: NotificationSettingsType) => void;
   onRequestNotificationPermission: () => Promise<boolean>;
+  onBulkImportIncome?: (data: any[]) => Promise<void>;
+  onBulkImportExpenses?: (data: any[]) => Promise<void>;
 }
 
 type SettingsSection = 'exchange-rates' | 'accounts' | 'notifications' | 'profit-distribution' | 'users' | 'data';
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ 
-  exchangeRates, 
-  onUpdateRates, 
-  accounts, 
+export const SettingsView: React.FC<SettingsViewProps> = ({
+  exchangeRates,
+  onUpdateRates,
+  accounts,
   onUpdateAccount,
   onAddAccount,
   onDeleteAccount,
   notificationSettings,
   onUpdateNotificationSettings,
-  onRequestNotificationPermission
+  onRequestNotificationPermission,
+  onBulkImportIncome,
+  onBulkImportExpenses
 }) => {
   const { profile: user } = useSupabaseAuth();
   const [activeSection, setActiveSection] = useState<SettingsSection>('exchange-rates');
@@ -131,6 +136,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         return <ProfitDistributionSettings />;
       
       case 'data':
+        if (onBulkImportIncome && onBulkImportExpenses) {
+          return (
+            <DataImport
+              onImportIncome={onBulkImportIncome}
+              onImportExpenses={onBulkImportExpenses}
+              accounts={accounts.map(acc => ({ name: acc.name, currency: acc.currency }))}
+              exchangeRates={exchangeRates}
+            />
+          );
+        }
         return <DataManagement />;
       
       default:

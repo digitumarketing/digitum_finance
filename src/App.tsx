@@ -54,6 +54,8 @@ function AppContent() {
     clearAllNotifications,
     updateNotificationSettings,
     refreshData,
+    bulkImportIncome,
+    bulkImportExpenses,
   } = useSupabaseData();
 
   const handleAddIncome = async (data: any) => {
@@ -267,7 +269,7 @@ function AppContent() {
 
       case 'settings':
         return (
-          <SettingsView 
+          <SettingsView
             exchangeRates={exchangeRates}
             onUpdateRates={setExchangeRates}
             accounts={accounts}
@@ -283,6 +285,8 @@ function AppContent() {
               }
               return false;
             }}
+            onBulkImportIncome={bulkImportIncome}
+            onBulkImportExpenses={bulkImportExpenses}
           />
         );
 

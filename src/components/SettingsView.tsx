@@ -177,18 +177,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
 
       {/* Data Persistence Information */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+      <div className="bg-green-50 border border-green-200 rounded-xl p-6">
         <div className="flex items-start space-x-3">
-          <Database className="w-5 h-5 text-blue-600 mt-0.5" />
+          <Database className="w-5 h-5 text-green-600 mt-0.5" />
           <div>
-            <h4 className="font-medium text-blue-900 mb-2">Local Storage Data Persistence</h4>
-            <div className="text-sm text-blue-800 space-y-2">
-              <p>• <strong>Storage Duration:</strong> Your data is stored locally in your browser and persists until you manually clear it</p>
+            <h4 className="font-medium text-green-900 mb-2">Supabase Cloud Database Storage</h4>
+            <div className="text-sm text-green-800 space-y-2">
+              <p>• <strong>Cloud Storage:</strong> All your data is securely stored in Supabase cloud database</p>
               <p>• <strong>Session Length:</strong> Login sessions last for 30 days and auto-extend with activity</p>
-              <p>• <strong>Data Safety:</strong> Data is stored locally on your device - not shared with external servers</p>
-              <p>• <strong>Backup Recommendation:</strong> Use the Data Management section to export your data regularly</p>
-              <p>• <strong>Browser Clearing:</strong> Data will be lost if you clear browser storage or use incognito mode</p>
-              <p>• <strong>Device Specific:</strong> Data is tied to this specific browser on this device</p>
+              <p>• <strong>Data Safety:</strong> Your data is encrypted and backed up automatically by Supabase</p>
+              <p>• <strong>Access Anywhere:</strong> Login from any device or browser to access your data</p>
+              <p>• <strong>No Data Loss:</strong> Clearing browser cache will NOT delete your data</p>
+              <p>• <strong>Backup Recommendation:</strong> Use the Data Management section to export your data for local backups</p>
             </div>
           </div>
         </div>

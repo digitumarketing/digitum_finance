@@ -593,14 +593,15 @@ export const useSupabaseData = () => {
 
       console.log('All income deleted successfully');
 
-      // Reload data
+      // Reload all data
       await loadIncome();
-      await updateAccountBalances();
+      await loadExpenses();
+      await loadAccounts();
     } catch (error) {
       console.error('Error in deleteAllIncome:', error);
       throw error;
     }
-  }, [user, loadIncome, updateAccountBalances]);
+  }, [user, loadIncome, loadExpenses, loadAccounts]);
 
   // Add expense
   const addExpense = useCallback(async (expenseData: any) => {
@@ -769,14 +770,15 @@ export const useSupabaseData = () => {
 
       console.log('All expenses deleted successfully');
 
-      // Reload data
+      // Reload all data
+      await loadIncome();
       await loadExpenses();
-      await updateAccountBalances();
+      await loadAccounts();
     } catch (error) {
       console.error('Error in deleteAllExpenses:', error);
       throw error;
     }
-  }, [user, loadExpenses, updateAccountBalances]);
+  }, [user, loadIncome, loadExpenses, loadAccounts]);
 
   // Update account balance
   const updateAccountBalance = useCallback(async (id: string, newBalance: number) => {

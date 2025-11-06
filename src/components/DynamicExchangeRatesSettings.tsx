@@ -90,33 +90,41 @@ export const DynamicExchangeRatesSettings: React.FC<DynamicExchangeRatesSettings
     setEditRates(newRates);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsUpdating(true);
-    
-    // Add to history
-    const historyEntry: ExchangeRateHistory = {
-      id: generateId(),
-      rates: { ...editRates },
-      updatedAt: new Date().toISOString(),
-      updatedBy: 'Manual Update',
-      note: 'Rates updated manually by user'
-    };
 
-    const newHistory = [historyEntry, ...rateHistory].slice(0, 50); // Keep last 50 entries
-    setRateHistory(newHistory);
-    localStorage.setItem('exchangeRateHistory', JSON.stringify(newHistory));
-    
-    // Update rates
-    onUpdateRates(editRates);
-    
-    // Update last updated timestamp
-    const now = new Date().toISOString();
-    setLastUpdated(now);
-    localStorage.setItem('exchangeRatesLastUpdated', now);
-    
-    setTimeout(() => {
-      setIsUpdating(false);
-    }, 500);
+    try {
+      // Add to history
+      const historyEntry: ExchangeRateHistory = {
+        id: generateId(),
+        rates: { ...editRates },
+        updatedAt: new Date().toISOString(),
+        updatedBy: 'Manual Update',
+        note: 'Rates updated manually by user'
+      };
+
+      const newHistory = [historyEntry, ...rateHistory].slice(0, 50); // Keep last 50 entries
+      setRateHistory(newHistory);
+      localStorage.setItem('exchangeRateHistory', JSON.stringify(newHistory));
+
+      // Update rates - this saves to database
+      await onUpdateRates(editRates);
+
+      // Update last updated timestamp
+      const now = new Date().toISOString();
+      setLastUpdated(now);
+      localStorage.setItem('exchangeRatesLastUpdated', now);
+
+      // Show success message
+      alert('Exchange rates updated successfully in database!');
+    } catch (error) {
+      console.error('Error saving exchange rates:', error);
+      alert('Error saving exchange rates. Please try again.');
+    } finally {
+      setTimeout(() => {
+        setIsUpdating(false);
+      }, 500);
+    }
   };
 
   const handleReset = () => {
@@ -552,8 +560,9 @@ export const DynamicExchangeRatesSettings: React.FC<DynamicExchangeRatesSettings
               <p>• Exchange rates are used to automatically convert foreign currency amounts to PKR</p>
               <p>• When adding income or expenses, you'll see the PKR equivalent calculated in real-time</p>
               <p>• All financial summaries and reports use PKR as the base currency</p>
-              <p>• Rate changes only affect new transactions - existing records maintain their original conversion</p>
-              <p>• Keep rates updated regularly for accurate financial tracking</p>
+              <p><strong>IMPORTANT:</strong> Rate changes are saved to the database and only affect NEW transactions - existing records keep their original conversion rates</p>
+              <p>• Each transaction stores the exchange rate that was used at the time of creation</p>
+              <p>• Keep rates updated regularly for accurate financial tracking of new transactions</p>
               <p>• You can add new currencies that will be available throughout the application</p>
             </div>
           </div>

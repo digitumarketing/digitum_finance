@@ -94,6 +94,8 @@ export const DynamicExchangeRatesSettings: React.FC<DynamicExchangeRatesSettings
     setIsUpdating(true);
 
     try {
+      console.log('Saving exchange rates...', editRates);
+
       // Add to history
       const historyEntry: ExchangeRateHistory = {
         id: generateId(),
@@ -108,7 +110,9 @@ export const DynamicExchangeRatesSettings: React.FC<DynamicExchangeRatesSettings
       localStorage.setItem('exchangeRateHistory', JSON.stringify(newHistory));
 
       // Update rates - this saves to database
+      console.log('Calling onUpdateRates...');
       await onUpdateRates(editRates);
+      console.log('onUpdateRates completed successfully');
 
       // Update last updated timestamp
       const now = new Date().toISOString();
@@ -116,10 +120,11 @@ export const DynamicExchangeRatesSettings: React.FC<DynamicExchangeRatesSettings
       localStorage.setItem('exchangeRatesLastUpdated', now);
 
       // Show success message
-      alert('Exchange rates updated successfully in database!');
+      console.log('Exchange rates saved successfully!');
+      alert('Exchange rates updated successfully in database! Check the browser console for details.');
     } catch (error) {
       console.error('Error saving exchange rates:', error);
-      alert('Error saving exchange rates. Please try again.');
+      alert('Error saving exchange rates: ' + (error as Error).message);
     } finally {
       setTimeout(() => {
         setIsUpdating(false);

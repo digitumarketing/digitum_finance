@@ -909,25 +909,35 @@ export const useSupabaseData = () => {
     if (!user) return;
 
     try {
+      console.log('Starting to update exchange rates...', newRates);
+
       // Update or insert exchange rates
       for (const [currency, rate] of Object.entries(newRates)) {
         if (currency !== 'PKR') {
-          const { error } = await supabase
+          console.log(`Updating ${currency} to rate ${rate}`);
+
+          const { data, error } = await supabase
             .from('exchange_rates')
             .upsert({
               user_id: user.id,
               currency,
               rate,
               updated_by: user.id,
-            });
+            }, {
+              onConflict: 'user_id,currency'
+            })
+            .select();
 
           if (error) {
             console.error(`Error updating rate for ${currency}:`, error);
+            throw error;
           }
+
+          console.log(`Successfully updated ${currency}:`, data);
         }
       }
 
-      console.log('Exchange rates updated successfully');
+      console.log('All exchange rates updated successfully in database');
 
       // Update local state
       setExchangeRates(newRates);

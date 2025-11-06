@@ -576,6 +576,32 @@ export const useSupabaseData = () => {
     }
   }, [user]);
 
+  // Delete all income
+  const deleteAllIncome = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('income')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting all income:', error);
+        throw error;
+      }
+
+      console.log('All income deleted successfully');
+
+      // Reload data
+      await loadIncome();
+      await updateAccountBalances();
+    } catch (error) {
+      console.error('Error in deleteAllIncome:', error);
+      throw error;
+    }
+  }, [user, loadIncome, updateAccountBalances]);
+
   // Add expense
   const addExpense = useCallback(async (expenseData: any) => {
     if (!user) return;
@@ -725,6 +751,32 @@ export const useSupabaseData = () => {
       throw error;
     }
   }, [user]);
+
+  // Delete all expenses
+  const deleteAllExpenses = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting all expenses:', error);
+        throw error;
+      }
+
+      console.log('All expenses deleted successfully');
+
+      // Reload data
+      await loadExpenses();
+      await updateAccountBalances();
+    } catch (error) {
+      console.error('Error in deleteAllExpenses:', error);
+      throw error;
+    }
+  }, [user, loadExpenses, updateAccountBalances]);
 
   // Update account balance
   const updateAccountBalance = useCallback(async (id: string, newBalance: number) => {
@@ -1236,6 +1288,8 @@ export const useSupabaseData = () => {
     updateExpense,
     deleteIncome,
     deleteExpense,
+    deleteAllIncome,
+    deleteAllExpenses,
     updateAccountBalance,
     addAccount,
     deleteAccount,

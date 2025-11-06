@@ -15,7 +15,7 @@ import { AccountsView } from './components/AccountsView';
 import { ReportsView } from './components/ReportsView';
 import { SettingsView } from './components/SettingsView';
 import { NotificationPanel } from './components/NotificationPanel';
-import { Plus, Shield, AlertTriangle, Database } from 'lucide-react';
+import { Plus, Shield, AlertTriangle, Database, Trash2 } from 'lucide-react';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -56,6 +56,8 @@ function AppContent() {
     refreshData,
     bulkImportIncome,
     bulkImportExpenses,
+    deleteAllIncome,
+    deleteAllExpenses,
   } = useSupabaseData();
 
   const handleAddIncome = async (data: any) => {
@@ -123,34 +125,68 @@ function AppContent() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Recent Income</h3>
-                <span className="text-sm text-green-600 font-medium">
-                  {income.slice(0, 5).length} transactions
-                </span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-green-600 font-medium">
+                    {income.length} transactions
+                  </span>
+                  {income.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(`Are you sure you want to delete all ${income.length} income transactions? This action cannot be undone.`)) {
+                          await deleteAllIncome();
+                        }
+                      }}
+                      className="flex items-center space-x-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete All</span>
+                    </button>
+                  )}
+                </div>
               </div>
-              <DataTable
-                data={income.slice(0, 5)}
-                type="income"
-                onDelete={deleteIncome}
-                onEdit={handleEditIncome}
-                exchangeRates={exchangeRates}
-              />
+              <div className="max-h-[600px] overflow-y-auto">
+                <DataTable
+                  data={income.slice(0, 10)}
+                  type="income"
+                  onDelete={deleteIncome}
+                  onEdit={handleEditIncome}
+                  exchangeRates={exchangeRates}
+                />
+              </div>
             </div>
 
             {/* Recent Expenses */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Recent Expenses</h3>
-                <span className="text-sm text-red-600 font-medium">
-                  {expenses.slice(0, 5).length} transactions
-                </span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-red-600 font-medium">
+                    {expenses.length} transactions
+                  </span>
+                  {expenses.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(`Are you sure you want to delete all ${expenses.length} expense transactions? This action cannot be undone.`)) {
+                          await deleteAllExpenses();
+                        }
+                      }}
+                      className="flex items-center space-x-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete All</span>
+                    </button>
+                  )}
+                </div>
               </div>
-              <DataTable
-                data={expenses.slice(0, 5)}
-                type="expense"
-                onDelete={deleteExpense}
-                onEdit={handleEditExpense}
-                exchangeRates={exchangeRates}
-              />
+              <div className="max-h-[600px] overflow-y-auto">
+                <DataTable
+                  data={expenses.slice(0, 10)}
+                  type="expense"
+                  onDelete={deleteExpense}
+                  onEdit={handleEditExpense}
+                  exchangeRates={exchangeRates}
+                />
+              </div>
             </div>
           </div>
         );
@@ -164,16 +200,31 @@ function AppContent() {
                 <h2 className="text-2xl font-bold text-gray-900">Income Management</h2>
                 <p className="text-gray-600 mt-1">Track and manage your income sources with payment status</p>
               </div>
-              <button
-                onClick={() => {
-                  setEditingIncome(null);
-                  setShowIncomeForm(true);
-                }}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors w-full sm:w-auto justify-center"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Income</span>
-              </button>
+              <div className="flex items-center space-x-3">
+                {allIncome.length > 0 && (
+                  <button
+                    onClick={async () => {
+                      if (window.confirm(`Are you sure you want to delete all ${allIncome.length} income transactions? This action cannot be undone.`)) {
+                        await deleteAllIncome();
+                      }
+                    }}
+                    className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete All</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setEditingIncome(null);
+                    setShowIncomeForm(true);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors w-full sm:w-auto justify-center"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Income</span>
+                </button>
+              </div>
             </div>
 
             {/* Income Form */}
@@ -210,16 +261,31 @@ function AppContent() {
                 <h2 className="text-2xl font-bold text-gray-900">Expense Management</h2>
                 <p className="text-gray-600 mt-1">Track and manage your business expenses</p>
               </div>
-              <button
-                onClick={() => {
-                  setEditingExpense(null);
-                  setShowExpenseForm(true);
-                }}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors w-full sm:w-auto justify-center"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Expense</span>
-              </button>
+              <div className="flex items-center space-x-3">
+                {allExpenses.length > 0 && (
+                  <button
+                    onClick={async () => {
+                      if (window.confirm(`Are you sure you want to delete all ${allExpenses.length} expense transactions? This action cannot be undone.`)) {
+                        await deleteAllExpenses();
+                      }
+                    }}
+                    className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete All</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setEditingExpense(null);
+                    setShowExpenseForm(true);
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors w-full sm:w-auto justify-center"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Expense</span>
+                </button>
+              </div>
             </div>
 
             {/* Expense Form */}

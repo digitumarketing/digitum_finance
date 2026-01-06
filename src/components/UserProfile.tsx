@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { User, LogOut, Shield, Clock, Settings, ChevronDown, X, Key, Edit, Phone, Building, FileText } from 'lucide-react';
 import { formatDate } from '../utils/helpers';
+import { PasswordChangeForm } from './PasswordChangeForm';
+import { supabase } from '../lib/supabase';
 
 export const UserProfile: React.FC = () => {
   const { user, profile, logout } = useSupabaseAuth();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
 
   if (!user || !profile) return null;
 
@@ -42,10 +45,28 @@ export const UserProfile: React.FC = () => {
 
   const handleLogout = () => {
     setShowDropdown(false);
-    // Add a small delay to allow dropdown to close
     setTimeout(() => {
       logout();
     }, 100);
+  };
+
+  const handlePasswordChange = async (currentPassword: string, newPassword: string) => {
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: profile.email,
+      password: currentPassword,
+    });
+
+    if (signInError) {
+      throw new Error('Current password is incorrect');
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
   };
 
   return (
@@ -190,6 +211,16 @@ export const UserProfile: React.FC = () => {
             {/* Actions */}
             <div className="p-4 border-t border-gray-100 space-y-2">
               <button
+                onClick={() => {
+                  setShowDropdown(false);
+                  setShowPasswordChange(true);
+                }}
+                className="w-full flex items-center space-x-2 p-2 text-left hover:bg-green-50 rounded-lg transition-colors text-sm text-green-600"
+              >
+                <Key className="w-4 h-4" />
+                <span>Change Password</span>
+              </button>
+              <button
                 onClick={handleLogout}
                 className="w-full flex items-center space-x-2 p-2 text-left hover:bg-red-50 rounded-lg transition-colors text-sm text-red-600"
               >
@@ -211,6 +242,14 @@ export const UserProfile: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Password Change Modal */}
+      {showPasswordChange && (
+        <PasswordChangeForm
+          onClose={() => setShowPasswordChange(false)}
+          onSubmit={handlePasswordChange}
+        />
+      )}
     </>
   );
 };

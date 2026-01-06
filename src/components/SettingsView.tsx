@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import { DynamicExchangeRatesSettings } from './DynamicExchangeRatesSettings';
 import { DynamicAccountManagement } from './DynamicAccountManagement';
 import { NotificationSettings } from './NotificationSettings';
-import { UserManagement } from './UserManagement';
 import { DataManagement } from './DataManagement';
 import { DataImport } from './DataImport';
 import { ExchangeRates, Account, NotificationSettings as NotificationSettingsType } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
-import { Settings, DollarSign, Building2, Bell, Database, Users, Crown, PieChart } from 'lucide-react';
+import { Settings, DollarSign, Building2, Bell, Database, Crown, PieChart } from 'lucide-react';
 import { ProfitDistributionSettings } from './ProfitDistributionSettings';
 
 interface SettingsViewProps {
@@ -24,7 +23,7 @@ interface SettingsViewProps {
   onBulkImportExpenses?: (data: any[]) => Promise<void>;
 }
 
-type SettingsSection = 'exchange-rates' | 'accounts' | 'notifications' | 'profit-distribution' | 'users' | 'data';
+type SettingsSection = 'exchange-rates' | 'accounts' | 'notifications' | 'profit-distribution' | 'data';
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   exchangeRates,
@@ -48,7 +47,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       name: 'Exchange Rates',
       icon: DollarSign,
       description: 'Manage currency conversion rates',
-      requiredRole: null // Available to all users with settings access
+      requiredRole: null
     },
     {
       id: 'accounts' as SettingsSection,
@@ -70,13 +69,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       icon: PieChart,
       description: 'Configure company and owner profit split ratios',
       requiredRole: null
-    },
-    {
-      id: 'users' as SettingsSection,
-      name: 'User Management',
-      icon: Users,
-      description: 'Manage users, roles, and permissions',
-      requiredRole: 'super_admin' // Only Super Admin
     },
     {
       id: 'data' as SettingsSection,
@@ -122,15 +114,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       
       case 'notifications':
         return (
-          <NotificationSettings 
+          <NotificationSettings
             settings={notificationSettings}
             onUpdateSettings={onUpdateNotificationSettings}
             onRequestPermission={onRequestNotificationPermission}
           />
         );
-
-      case 'users':
-        return <UserManagement />;
 
       case 'profit-distribution':
         return <ProfitDistributionSettings />;
@@ -210,9 +199,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               >
                 <section.icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{section.name}</span>
-                {section.requiredRole === 'super_admin' && (
-                  <Crown className="w-3 h-3 text-purple-600" />
-                )}
               </button>
             ))}
           </nav>

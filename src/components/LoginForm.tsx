@@ -9,8 +9,10 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading, error, onClearError }) => {
+  const LOCKED_EMAIL = 'roshaanraza0@gmail.com';
+
   const [credentials, setCredentials] = useState({
-    email: '',
+    email: LOCKED_EMAIL,
     password: '',
     rememberMe: false,
   });
@@ -19,12 +21,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading, error,
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-
-    if (!credentials.email) {
-      errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(credentials.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
 
     if (!credentials.password) {
       errors.password = 'Password is required';
@@ -38,11 +34,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading, error,
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     onClearError();
-    await onLogin({ email: credentials.email, password: credentials.password });
+    await onLogin({ email: LOCKED_EMAIL, password: credentials.password });
   };
 
   const handleChange = (field: string, value: any) => {
@@ -78,29 +74,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading, error,
         {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
+            {/* Email Display (Read-only) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+                Account
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-gray-400" />
                 </div>
-                <input
-                  type="email"
-                  value={credentials.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
-                    validationErrors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter your email address"
-                  disabled={isLoading}
-                />
+                <div className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-medium">
+                  {LOCKED_EMAIL}
+                </div>
               </div>
-              {validationErrors.email && (
-                <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
-              )}
+              <p className="text-xs text-gray-500 mt-1">Single user account</p>
             </div>
 
             {/* Password Field */}

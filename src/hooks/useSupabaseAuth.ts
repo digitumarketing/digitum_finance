@@ -259,29 +259,32 @@ export const useSupabaseAuth = () => {
     initializeAuth();
 
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, !!session);
-      
-      if (event === 'SIGNED_IN' && session) {
-        console.log('Auth state changed: User signed in');
-        await handleUserSession(session);
-      } else if (event === 'SIGNED_OUT') {
-        console.log('User signed out, clearing state...');
-        clearTimeout(timeoutId);
-        setAuthState({
-          user: null,
-          profile: null,
-          session: null,
-          isLoading: false,
-          error: null,
-        });
-        setUsers([]);
-      } else if (event === 'TOKEN_REFRESHED') {
-        console.log('Token refreshed successfully');
-        // Don't need to reload profile on token refresh
-      } else if (event === 'USER_UPDATED') {
-        console.log('User updated, may need to reload profile');
-      }
+
+      // Use async IIFE to avoid deadlock
+      (async () => {
+        if (event === 'SIGNED_IN' && session) {
+          console.log('Auth state changed: User signed in');
+          await handleUserSession(session);
+        } else if (event === 'SIGNED_OUT') {
+          console.log('User signed out, clearing state...');
+          clearTimeout(timeoutId);
+          setAuthState({
+            user: null,
+            profile: null,
+            session: null,
+            isLoading: false,
+            error: null,
+          });
+          setUsers([]);
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed successfully');
+          // Don't need to reload profile on token refresh
+        } else if (event === 'USER_UPDATED') {
+          console.log('User updated, may need to reload profile');
+        }
+      })();
     });
 
     return () => {
@@ -371,33 +374,19 @@ export const useSupabaseAuth = () => {
   const logout = useCallback(async () => {
     try {
       console.log('Logging out user...');
-      setAuthState(prev => ({ ...prev, isLoading: true }));
 
       const { error } = await supabase.auth.signOut({ scope: 'global' });
 
       if (error) {
         console.error('Supabase signOut error:', error);
+        throw error;
       }
 
-      // Clear all local state immediately
-      setAuthState({
-        user: null,
-        profile: null,
-        session: null,
-        isLoading: false,
-        error: null,
-      });
-      setUsers([]);
-
       console.log('User logged out successfully');
-
-      // Force page reload to ensure clean state
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
     } catch (error) {
       console.error('Error during logout:', error);
-      // Even if logout fails, clear local state
+
+      // Force clear state and reload on error
       setAuthState({
         user: null,
         profile: null,
@@ -407,10 +396,7 @@ export const useSupabaseAuth = () => {
       });
       setUsers([]);
 
-      // Force reload even on error
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
+      window.location.reload();
     }
   }, []);
 

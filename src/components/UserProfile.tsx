@@ -43,11 +43,9 @@ export const UserProfile: React.FC = () => {
     ).join(' ');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setShowDropdown(false);
-    setTimeout(() => {
-      logout();
-    }, 100);
+    await logout();
   };
 
   const handlePasswordChange = async (currentPassword: string, newPassword: string) => {

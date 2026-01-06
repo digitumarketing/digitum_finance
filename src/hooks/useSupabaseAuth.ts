@@ -372,9 +372,13 @@ export const useSupabaseAuth = () => {
     try {
       console.log('Logging out user...');
       setAuthState(prev => ({ ...prev, isLoading: true }));
-      
-      await supabase.auth.signOut();
-      
+
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+
+      if (error) {
+        console.error('Supabase signOut error:', error);
+      }
+
       // Clear all local state immediately
       setAuthState({
         user: null,
@@ -384,8 +388,13 @@ export const useSupabaseAuth = () => {
         error: null,
       });
       setUsers([]);
-      
+
       console.log('User logged out successfully');
+
+      // Force page reload to ensure clean state
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     } catch (error) {
       console.error('Error during logout:', error);
       // Even if logout fails, clear local state
@@ -397,6 +406,11 @@ export const useSupabaseAuth = () => {
         error: null,
       });
       setUsers([]);
+
+      // Force reload even on error
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     }
   }, []);
 

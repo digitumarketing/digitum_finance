@@ -375,18 +375,7 @@ export const useSupabaseAuth = () => {
     try {
       console.log('Logging out user...');
 
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-
-      if (error) {
-        console.error('Supabase signOut error:', error);
-        throw error;
-      }
-
-      console.log('User logged out successfully');
-    } catch (error) {
-      console.error('Error during logout:', error);
-
-      // Force clear state and reload on error
+      // Clear state immediately
       setAuthState({
         user: null,
         profile: null,
@@ -396,7 +385,26 @@ export const useSupabaseAuth = () => {
       });
       setUsers([]);
 
-      window.location.reload();
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+
+      if (error) {
+        console.error('Supabase signOut error:', error);
+      }
+
+      console.log('User logged out successfully');
+    } catch (error) {
+      console.error('Error during logout:', error);
+
+      // Ensure state is cleared even on error
+      setAuthState({
+        user: null,
+        profile: null,
+        session: null,
+        isLoading: false,
+        error: null,
+      });
+      setUsers([]);
     }
   }, []);
 

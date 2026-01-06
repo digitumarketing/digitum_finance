@@ -1005,24 +1005,44 @@ export const useSupabaseData = () => {
         if (currency !== 'PKR') {
           console.log(`Updating ${currency} to rate ${rate}`);
 
-          const { data, error } = await supabase
+          // Check if the rate already exists
+          const { data: existing } = await supabase
             .from('exchange_rates')
-            .upsert({
-              user_id: user.id,
-              currency,
-              rate,
-              updated_by: user.id,
-            }, {
-              onConflict: 'user_id,currency'
-            })
-            .select();
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('currency', currency)
+            .maybeSingle();
 
-          if (error) {
-            console.error(`Error updating rate for ${currency}:`, error);
-            throw error;
+          let result;
+          if (existing) {
+            // Update existing rate
+            result = await supabase
+              .from('exchange_rates')
+              .update({
+                rate,
+                updated_by: user.id,
+              })
+              .eq('id', existing.id)
+              .select();
+          } else {
+            // Insert new rate
+            result = await supabase
+              .from('exchange_rates')
+              .insert({
+                user_id: user.id,
+                currency,
+                rate,
+                updated_by: user.id,
+              })
+              .select();
           }
 
-          console.log(`Successfully updated ${currency}:`, data);
+          if (result.error) {
+            console.error(`Error updating rate for ${currency}:`, result.error);
+            throw result.error;
+          }
+
+          console.log(`Successfully ${existing ? 'updated' : 'inserted'} ${currency}:`, result.data);
         }
       }
 

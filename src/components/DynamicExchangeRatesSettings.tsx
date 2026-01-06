@@ -28,7 +28,7 @@ interface ExchangeRateHistory {
 
 interface DynamicExchangeRatesSettingsProps {
   exchangeRates: ExchangeRates;
-  onUpdateRates: (rates: ExchangeRates) => void;
+  onUpdateRates: (rates: ExchangeRates) => Promise<void>;
 }
 
 export const DynamicExchangeRatesSettings: React.FC<DynamicExchangeRatesSettingsProps> = ({

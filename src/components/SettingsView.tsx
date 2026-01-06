@@ -11,7 +11,7 @@ import { ProfitDistributionSettings } from './ProfitDistributionSettings';
 
 interface SettingsViewProps {
   exchangeRates: ExchangeRates;
-  onUpdateRates: (rates: ExchangeRates) => void;
+  onUpdateRates: (rates: ExchangeRates) => Promise<void>;
   accounts: Account[];
   onUpdateAccount: (id: string, updates: Partial<Account>) => void;
   onAddAccount?: (account: Omit<Account, 'id'>) => void;

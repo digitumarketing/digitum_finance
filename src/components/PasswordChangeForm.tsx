@@ -180,7 +180,10 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ onClose,
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                <p className="text-green-700 text-sm">Password changed successfully!</p>
+                <div>
+                  <p className="text-green-700 text-sm font-medium">Password changed successfully!</p>
+                  <p className="text-green-600 text-xs mt-1">You will be logged out in a moment...</p>
+                </div>
               </div>
             </div>
           )}

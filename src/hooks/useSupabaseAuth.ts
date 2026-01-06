@@ -375,36 +375,36 @@ export const useSupabaseAuth = () => {
     try {
       console.log('Logging out user...');
 
-      // Clear state immediately
-      setAuthState({
-        user: null,
-        profile: null,
-        session: null,
-        isLoading: false,
-        error: null,
-      });
-      setUsers([]);
-
       // Sign out from Supabase
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      await supabase.auth.signOut({ scope: 'global' });
 
-      if (error) {
-        console.error('Supabase signOut error:', error);
-      }
+      // Clear all auth-related data from localStorage
+      localStorage.removeItem('supabase.auth.token');
 
-      console.log('User logged out successfully');
+      // Clear all localStorage items that start with 'sb-'
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      console.log('User logged out successfully, reloading...');
+
+      // Force page reload to completely reset the app
+      window.location.href = '/';
     } catch (error) {
       console.error('Error during logout:', error);
 
-      // Ensure state is cleared even on error
-      setAuthState({
-        user: null,
-        profile: null,
-        session: null,
-        isLoading: false,
-        error: null,
+      // Force clear localStorage even on error
+      localStorage.removeItem('supabase.auth.token');
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
+          localStorage.removeItem(key);
+        }
       });
-      setUsers([]);
+
+      // Force reload even on error
+      window.location.href = '/';
     }
   }, []);
 
@@ -567,6 +567,12 @@ export const useSupabaseAuth = () => {
         if (error) {
           throw new Error(error.message);
         }
+
+        // If user changed their own password, log them out
+        console.log('Password changed successfully, logging out...');
+        setTimeout(() => {
+          logout();
+        }, 1000);
       }
 
       return true;
@@ -574,7 +580,7 @@ export const useSupabaseAuth = () => {
       console.error('Error changing password:', error);
       throw error;
     }
-  }, [authState.user, authState.profile]);
+  }, [authState.user, authState.profile, logout]);
 
   // Reset password (Super Admin only)
   const resetPassword = useCallback(async (userId: string, newPassword: string): Promise<boolean> => {

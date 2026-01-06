@@ -105,7 +105,7 @@ export const DynamicExchangeRatesSettings: React.FC<DynamicExchangeRatesSettings
         note: 'Rates updated manually by user'
       };
 
-      const newHistory = [historyEntry, ...rateHistory].slice(0, 50); // Keep last 50 entries
+      const newHistory = [historyEntry, ...rateHistory].slice(0, 50);
       setRateHistory(newHistory);
       localStorage.setItem('exchangeRateHistory', JSON.stringify(newHistory));
 
@@ -121,7 +121,12 @@ export const DynamicExchangeRatesSettings: React.FC<DynamicExchangeRatesSettings
 
       // Show success message
       console.log('Exchange rates saved successfully!');
-      alert('Exchange rates updated successfully in database! Check the browser console for details.');
+
+      const currencies = Object.keys(editRates).filter(c => c !== 'PKR');
+      const successMessage = `Successfully saved ${currencies.length} exchange rate(s) to database:\n` +
+        currencies.map(c => `${c}: ${editRates[c]} PKR`).join('\n');
+
+      alert(successMessage);
     } catch (error) {
       console.error('Error saving exchange rates:', error);
       alert('Error saving exchange rates: ' + (error as Error).message);

@@ -965,6 +965,41 @@ export const useSupabaseData = () => {
     try {
       console.log('Starting to update exchange rates...', newRates);
 
+      // First, get all existing currencies from the database
+      const { data: existingRates, error: fetchError } = await supabase
+        .from('exchange_rates')
+        .select('currency')
+        .eq('user_id', user.id);
+
+      if (fetchError) {
+        console.error('Error fetching existing rates:', fetchError);
+        throw fetchError;
+      }
+
+      const existingCurrencies = existingRates?.map(r => r.currency) || [];
+      const newCurrencies = Object.keys(newRates).filter(c => c !== 'PKR');
+
+      // Find currencies to delete (exist in DB but not in newRates)
+      const currenciesToDelete = existingCurrencies.filter(
+        currency => !newCurrencies.includes(currency)
+      );
+
+      // Delete removed currencies
+      if (currenciesToDelete.length > 0) {
+        console.log('Deleting removed currencies:', currenciesToDelete);
+        const { error: deleteError } = await supabase
+          .from('exchange_rates')
+          .delete()
+          .eq('user_id', user.id)
+          .in('currency', currenciesToDelete);
+
+        if (deleteError) {
+          console.error('Error deleting currencies:', deleteError);
+          throw deleteError;
+        }
+        console.log('Successfully deleted currencies:', currenciesToDelete);
+      }
+
       // Update or insert exchange rates
       for (const [currency, rate] of Object.entries(newRates)) {
         if (currency !== 'PKR') {

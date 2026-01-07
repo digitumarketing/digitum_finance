@@ -57,6 +57,7 @@ function AppContent() {
     clearAllNotifications,
     updateNotificationSettings,
     refreshData,
+    recalculateAllBalances,
     bulkImportIncome,
     bulkImportExpenses,
     deleteAllIncome,
@@ -322,9 +323,9 @@ function AppContent() {
 
       case 'accounts':
         return (
-          <AccountsView 
+          <AccountsView
             accounts={accounts}
-            onUpdateBalance={updateAccountBalance}
+            onRefreshBalances={recalculateAllBalances}
             totalCompanyBalance={dashboardSummary.currentMonth.remainingCompanyBalance}
           />
         );

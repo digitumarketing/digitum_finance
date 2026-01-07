@@ -1288,6 +1288,31 @@ export const useSupabaseData = () => {
     }
   }, [user, addExpense, loadExpenses, updateAccountBalances]);
 
+  // Recalculate all account balances from database
+  const recalculateAllBalances = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      console.log('Recalculating all account balances...');
+
+      // Call the database function to recalculate all balances
+      const { data, error } = await supabase.rpc('recalculate_all_account_balances');
+
+      if (error) {
+        console.error('Error recalculating balances:', error);
+        throw error;
+      }
+
+      console.log(`Successfully recalculated ${data} account balances`);
+
+      // Reload accounts to get updated balances
+      await loadAccounts();
+    } catch (error) {
+      console.error('Error in recalculateAllBalances:', error);
+      throw error;
+    }
+  }, [user, loadAccounts]);
+
   // Filter data by selected month
   const monthlyIncome = income.filter(item => item.date.startsWith(selectedMonth));
   const monthlyExpenses = expenses.filter(item => item.date.startsWith(selectedMonth));
@@ -1386,5 +1411,6 @@ export const useSupabaseData = () => {
     
     // Utility
     refreshData: loadAllData,
+    recalculateAllBalances,
   };
 };

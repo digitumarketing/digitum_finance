@@ -451,6 +451,51 @@ export const useSupabaseAuth = () => {
         throw new Error(profileError.message);
       }
 
+      // Create default accounts for new user
+      const { error: accountsError } = await supabase
+        .from('accounts')
+        .insert([
+          { user_id: data.user.id, name: 'Bank Alfalah', currency: 'PKR', balance: 0, converted_balance: 0, notes: 'Main PKR account' },
+          { user_id: data.user.id, name: 'Wise USD', currency: 'USD', balance: 0, converted_balance: 0, notes: 'USD foreign exchange account' },
+          { user_id: data.user.id, name: 'Wise GBP', currency: 'GBP', balance: 0, converted_balance: 0, notes: 'GBP foreign exchange account' },
+          { user_id: data.user.id, name: 'Payoneer', currency: 'USD', balance: 0, converted_balance: 0, notes: 'USD payment processing account' }
+        ]);
+
+      if (accountsError) {
+        console.error('Error creating default accounts:', accountsError);
+      }
+
+      // Create default exchange rates for new user
+      const { error: ratesError } = await supabase
+        .from('exchange_rates')
+        .insert([
+          { user_id: data.user.id, currency: 'USD', rate: 278.5000, updated_by: data.user.id },
+          { user_id: data.user.id, currency: 'AED', rate: 75.8500, updated_by: data.user.id },
+          { user_id: data.user.id, currency: 'GBP', rate: 354.2000, updated_by: data.user.id }
+        ]);
+
+      if (ratesError) {
+        console.error('Error creating default exchange rates:', ratesError);
+      }
+
+      // Create default notification settings for new user
+      const { error: notifError } = await supabase
+        .from('notification_settings')
+        .insert({
+          user_id: data.user.id,
+          email_enabled: false,
+          whatsapp_enabled: false,
+          in_app_enabled: true,
+          email_address: userData.email,
+          reminder_days: 3,
+          daily_digest: false,
+          weekly_report: false
+        });
+
+      if (notifError) {
+        console.error('Error creating notification settings:', notifError);
+      }
+
       // Reload users list
       await loadAllUsers();
       return true;

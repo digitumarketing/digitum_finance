@@ -1,5 +1,5 @@
 /*
-  Fix RLS Policies for Super Admin to Create User Resources
+  Fix RLS Policies for Super Admin and User Management
 
   INSTRUCTIONS:
   1. Go to your Supabase Dashboard
@@ -7,14 +7,57 @@
   3. Copy and paste this entire SQL script
   4. Click "Run" to execute
 
-  This allows super admins to create accounts, exchange rates, and
-  notification settings for newly created users so they can see and use them.
+  This script fixes:
+  - Super admins can create/delete users and their resources
+  - New users can see their default accounts
+  - Manager users can view and edit income/expenses on their accounts
 */
 
 -- Drop existing restrictive policies
+DROP POLICY IF EXISTS "Super admins can manage all profiles" ON user_profiles;
 DROP POLICY IF EXISTS "Users can manage own accounts" ON accounts;
 DROP POLICY IF EXISTS "Users can manage own exchange rates" ON exchange_rates;
 DROP POLICY IF EXISTS "Users can manage own notification settings" ON notification_settings;
+
+-- ============================================================================
+-- USER PROFILES TABLE POLICIES
+-- ============================================================================
+
+-- Super admins can insert user profiles
+CREATE POLICY "Super admins can insert user profiles" ON user_profiles
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM user_profiles up
+      WHERE up.id = auth.uid() AND up.role = 'super_admin' AND up.is_active = true
+    )
+  );
+
+-- Super admins can update user profiles
+CREATE POLICY "Super admins can update user profiles" ON user_profiles
+  FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles up
+      WHERE up.id = auth.uid() AND up.role = 'super_admin' AND up.is_active = true
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM user_profiles up
+      WHERE up.id = auth.uid() AND up.role = 'super_admin' AND up.is_active = true
+    )
+  );
+
+-- Super admins can delete user profiles
+CREATE POLICY "Super admins can delete user profiles" ON user_profiles
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles up
+      WHERE up.id = auth.uid() AND up.role = 'super_admin' AND up.is_active = true
+    )
+  );
 
 -- ============================================================================
 -- ACCOUNTS TABLE POLICIES
@@ -61,6 +104,16 @@ CREATE POLICY "Users can delete own accounts" ON accounts
   FOR DELETE TO authenticated
   USING (auth.uid() = user_id);
 
+-- Super admins can delete any accounts
+CREATE POLICY "Super admins can delete any accounts" ON accounts
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'super_admin' AND is_active = true
+    )
+  );
+
 -- ============================================================================
 -- EXCHANGE RATES TABLE POLICIES
 -- ============================================================================
@@ -106,6 +159,16 @@ CREATE POLICY "Users can delete own exchange rates" ON exchange_rates
   FOR DELETE TO authenticated
   USING (auth.uid() = user_id);
 
+-- Super admins can delete any exchange rates
+CREATE POLICY "Super admins can delete any exchange rates" ON exchange_rates
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'super_admin' AND is_active = true
+    )
+  );
+
 -- ============================================================================
 -- NOTIFICATION SETTINGS TABLE POLICIES
 -- ============================================================================
@@ -150,3 +213,147 @@ CREATE POLICY "Users can update own notification settings" ON notification_setti
 CREATE POLICY "Users can delete own notification settings" ON notification_settings
   FOR DELETE TO authenticated
   USING (auth.uid() = user_id);
+
+-- Super admins can delete any notification settings
+CREATE POLICY "Super admins can delete any notification settings" ON notification_settings
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'super_admin' AND is_active = true
+    )
+  );
+
+-- ============================================================================
+-- INCOME TABLE POLICIES
+-- ============================================================================
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Users can manage own income" ON income;
+
+-- Users can view their own income
+CREATE POLICY "Users can view own income" ON income
+  FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Super admins can view all income
+CREATE POLICY "Super admins can view all income" ON income
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'super_admin' AND is_active = true
+    )
+  );
+
+-- Users can insert their own income
+CREATE POLICY "Users can insert own income" ON income
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+-- Users can update their own income
+CREATE POLICY "Users can update own income" ON income
+  FOR UPDATE TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Users can delete their own income
+CREATE POLICY "Users can delete own income" ON income
+  FOR DELETE TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Super admins can delete any income
+CREATE POLICY "Super admins can delete any income" ON income
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'super_admin' AND is_active = true
+    )
+  );
+
+-- ============================================================================
+-- EXPENSES TABLE POLICIES
+-- ============================================================================
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Users can manage own expenses" ON expenses;
+
+-- Users can view their own expenses
+CREATE POLICY "Users can view own expenses" ON expenses
+  FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Super admins can view all expenses
+CREATE POLICY "Super admins can view all expenses" ON expenses
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'super_admin' AND is_active = true
+    )
+  );
+
+-- Users can insert their own expenses
+CREATE POLICY "Users can insert own expenses" ON expenses
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+-- Users can update their own expenses
+CREATE POLICY "Users can update own expenses" ON expenses
+  FOR UPDATE TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Users can delete their own expenses
+CREATE POLICY "Users can delete own expenses" ON expenses
+  FOR DELETE TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Super admins can delete any expenses
+CREATE POLICY "Super admins can delete any expenses" ON expenses
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'super_admin' AND is_active = true
+    )
+  );
+
+-- ============================================================================
+-- NOTIFICATIONS TABLE POLICIES
+-- ============================================================================
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Users can manage own notifications" ON notifications;
+
+-- Users can view their own notifications
+CREATE POLICY "Users can view own notifications" ON notifications
+  FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Users can insert their own notifications
+CREATE POLICY "Users can insert own notifications" ON notifications
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+-- Users can update their own notifications
+CREATE POLICY "Users can update own notifications" ON notifications
+  FOR UPDATE TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Users can delete their own notifications
+CREATE POLICY "Users can delete own notifications" ON notifications
+  FOR DELETE TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Super admins can delete any notifications
+CREATE POLICY "Super admins can delete any notifications" ON notifications
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'super_admin' AND is_active = true
+    )
+  );

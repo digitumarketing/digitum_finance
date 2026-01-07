@@ -76,13 +76,9 @@ export const UserManagement: React.FC = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    try {
-      await deleteUser(userId);
-      setShowDeleteConfirm(false);
-      setUserToDelete(null);
-    } catch (error) {
-      console.error('Error deleting user:', error);
-    }
+    await deleteUser(userId);
+    setShowDeleteConfirm(false);
+    setUserToDelete(null);
   };
 
   const handleChangePassword = async (userId: string, passwordData: ChangePasswordData) => {
@@ -1049,8 +1045,22 @@ const ResetPasswordModal: React.FC<{
 const DeleteConfirmModal: React.FC<{
   user: UserProfile;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
 }> = ({ user, onClose, onConfirm }) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConfirm = async () => {
+    setIsDeleting(true);
+    setError(null);
+    try {
+      await onConfirm();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete user');
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
@@ -1066,22 +1076,30 @@ const DeleteConfirmModal: React.FC<{
           </div>
 
           <p className="text-gray-700 mb-6">
-            Are you sure you want to delete <strong>{user.name}</strong> ({user.email})? 
+            Are you sure you want to delete <strong>{user.name}</strong> ({user.email})?
             This will permanently remove their account and all associated data.
           </p>
+
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
 
           <div className="flex space-x-3">
             <button
               onClick={onClose}
               className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              disabled={isDeleting}
             >
               Cancel
             </button>
             <button
-              onClick={onConfirm}
-              className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              onClick={handleConfirm}
+              className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isDeleting}
             >
-              Delete User
+              {isDeleting ? 'Deleting...' : 'Delete User'}
             </button>
           </div>
         </div>

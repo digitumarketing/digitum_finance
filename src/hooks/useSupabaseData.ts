@@ -228,7 +228,7 @@ export const useSupabaseData = () => {
         .from('income')
         .select(`
           *,
-          user_profiles!inner(
+          user_profiles(
             name,
             email
           )
@@ -291,7 +291,7 @@ export const useSupabaseData = () => {
         .from('expenses')
         .select(`
           *,
-          user_profiles!inner(
+          user_profiles(
             name,
             email
           )

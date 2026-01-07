@@ -9,9 +9,10 @@ interface DataTableProps {
   onEdit?: (item: Income | Expense) => void;
   onDelete?: (id: string) => void;
   exchangeRates?: { USD: number; AED: number; GBP: number; PKR: 1 };
+  showUserAttribution?: boolean;
 }
 
-export const DataTable: React.FC<DataTableProps> = ({ data, type, onEdit, onDelete, exchangeRates }) => {
+export const DataTable: React.FC<DataTableProps> = ({ data, type, onEdit, onDelete, exchangeRates, showUserAttribution = false }) => {
   const [showCancelled, setShowCancelled] = useState(false);
   const [statusFilter, setStatusFilter] = useState<IncomeStatus | 'all'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'status'>('date');
@@ -365,6 +366,11 @@ export const DataTable: React.FC<DataTableProps> = ({ data, type, onEdit, onDele
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
+                {showUserAttribution && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created By
+                  </th>
+                )}
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
@@ -432,6 +438,14 @@ export const DataTable: React.FC<DataTableProps> = ({ data, type, onEdit, onDele
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(item)}
                     </td>
+                    {showUserAttribution && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex flex-col">
+                          <span className="font-medium">{item.userName || 'Unknown'}</span>
+                          <span className="text-xs text-gray-500">{item.userEmail || ''}</span>
+                        </div>
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
                         {onEdit && (

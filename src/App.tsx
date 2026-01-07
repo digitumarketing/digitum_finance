@@ -24,6 +24,9 @@ function AppContent() {
   const [editingIncome, setEditingIncome] = useState<any>(null);
   const [editingExpense, setEditingExpense] = useState<any>(null);
 
+  const { profile } = useSupabaseAuth();
+  const isSuperAdmin = profile?.role === 'super_admin';
+
   const {
     income,
     expenses,
@@ -151,6 +154,7 @@ function AppContent() {
                   onDelete={deleteIncome}
                   onEdit={handleEditIncome}
                   exchangeRates={exchangeRates}
+                  showUserAttribution={isSuperAdmin}
                 />
               </div>
             </div>
@@ -185,6 +189,7 @@ function AppContent() {
                   onDelete={deleteExpense}
                   onEdit={handleEditExpense}
                   exchangeRates={exchangeRates}
+                  showUserAttribution={isSuperAdmin}
                 />
               </div>
             </div>
@@ -242,12 +247,13 @@ function AppContent() {
             )}
 
             {/* Income Table */}
-            <DataTable 
-              data={income} 
+            <DataTable
+              data={income}
               type="income"
               onDelete={deleteIncome}
               onEdit={handleEditIncome}
               exchangeRates={exchangeRates}
+              showUserAttribution={isSuperAdmin}
             />
           </div>
         );
@@ -303,12 +309,13 @@ function AppContent() {
             )}
 
             {/* Expenses Table */}
-            <DataTable 
-              data={expenses} 
+            <DataTable
+              data={expenses}
               type="expense"
               onDelete={deleteExpense}
               onEdit={handleEditExpense}
               exchangeRates={exchangeRates}
+              showUserAttribution={isSuperAdmin}
             />
           </div>
         );

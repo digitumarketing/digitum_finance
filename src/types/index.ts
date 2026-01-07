@@ -57,18 +57,23 @@ export interface Income {
   notes?: string;
   status: IncomeStatus;
   account: AccountName; // Which account the money is held in
-  
+
   // Due date for upcoming payments
   dueDate?: string; // Expected payment date for upcoming income
-  
+
   // Manual conversion tracking
   manualConversionRate?: number; // User-entered conversion rate
   manualPKRAmount?: number; // User-entered PKR amount (override)
-  
+
   // Simple distribution tracking
   splitAmountPKR: number; // Full PKR amount for distribution
   splitRateUsed: number; // Exchange rate used for conversion
-  
+
+  // User tracking
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -84,14 +89,19 @@ export interface Expense {
   paymentStatus: PaymentStatus;
   notes?: string;
   account: AccountName; // Which account was used for payment
-  
+
   // Due date for pending payments
   dueDate?: string; // Expected payment date for pending expenses
-  
+
   // Manual conversion tracking
   manualConversionRate?: number; // User-entered conversion rate
   manualPKRAmount?: number; // User-entered PKR amount (override)
-  
+
+  // User tracking
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+
   createdAt: string;
   updatedAt: string;
 }

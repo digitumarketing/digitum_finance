@@ -223,11 +223,25 @@ export const useSupabaseData = () => {
 
     try {
       console.log('Loading income...');
-      const { data, error } = await supabase
+      const isSuperAdmin = profile.role === 'super_admin';
+
+      let query = supabase
         .from('income')
-        .select('*')
-        .eq('user_id', user.id)
+        .select(`
+          *,
+          user_profiles!income_user_id_fkey (
+            id,
+            name,
+            email
+          )
+        `)
         .order('date', { ascending: false });
+
+      if (!isSuperAdmin) {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error} = await query;
 
       if (error) {
         console.error('Error loading income:', error);
@@ -253,12 +267,15 @@ export const useSupabaseData = () => {
         manualPKRAmount: item.manual_pkr_amount ? parseFloat(item.manual_pkr_amount) : undefined,
         splitAmountPKR: parseFloat(item.split_amount_pkr || 0),
         splitRateUsed: parseFloat(item.split_rate_used || 1),
+        userId: item.user_id,
+        userName: item.user_profiles?.name,
+        userEmail: item.user_profiles?.email,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
       }));
 
       setIncome(incomeData);
-      console.log('Income loaded:', incomeData.length);
+      console.log('Income loaded:', incomeData.length, isSuperAdmin ? '(all users)' : '(current user only)');
     } catch (error) {
       console.error('Error in loadIncome:', error);
     }
@@ -270,11 +287,25 @@ export const useSupabaseData = () => {
 
     try {
       console.log('Loading expenses...');
-      const { data, error } = await supabase
+      const isSuperAdmin = profile.role === 'super_admin';
+
+      let query = supabase
         .from('expenses')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false });
+        .select(`
+          *,
+          user_profiles!expenses_user_id_fkey (
+            id,
+            name,
+            email
+          )
+        `)
+        .order('date', { ascending: false});
+
+      if (!isSuperAdmin) {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error loading expenses:', error);
@@ -295,12 +326,15 @@ export const useSupabaseData = () => {
         dueDate: item.due_date,
         manualConversionRate: item.manual_conversion_rate ? parseFloat(item.manual_conversion_rate) : undefined,
         manualPKRAmount: item.manual_pkr_amount ? parseFloat(item.manual_pkr_amount) : undefined,
+        userId: item.user_id,
+        userName: item.user_profiles?.name,
+        userEmail: item.user_profiles?.email,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
       }));
 
       setExpenses(expensesData);
-      console.log('Expenses loaded:', expensesData.length);
+      console.log('Expenses loaded:', expensesData.length, isSuperAdmin ? '(all users)' : '(current user only)');
     } catch (error) {
       console.error('Error in loadExpenses:', error);
     }

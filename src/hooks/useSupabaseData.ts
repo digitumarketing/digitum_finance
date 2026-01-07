@@ -226,7 +226,13 @@ export const useSupabaseData = () => {
 
       let query = supabase
         .from('income')
-        .select('*')
+        .select(`
+          *,
+          user_profiles!income_user_id_fkey(
+            name,
+            email
+          )
+        `)
         .order('date', { ascending: false });
 
       if (!isSuperAdmin) {
@@ -260,6 +266,8 @@ export const useSupabaseData = () => {
         splitAmountPKR: parseFloat(item.split_amount_pkr || 0),
         splitRateUsed: parseFloat(item.split_rate_used || 1),
         userId: item.user_id,
+        userName: item.user_profiles?.name,
+        userEmail: item.user_profiles?.email,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
       }));
@@ -281,7 +289,13 @@ export const useSupabaseData = () => {
 
       let query = supabase
         .from('expenses')
-        .select('*')
+        .select(`
+          *,
+          user_profiles!expenses_user_id_fkey(
+            name,
+            email
+          )
+        `)
         .order('date', { ascending: false});
 
       if (!isSuperAdmin) {
@@ -310,6 +324,8 @@ export const useSupabaseData = () => {
         manualConversionRate: item.manual_conversion_rate ? parseFloat(item.manual_conversion_rate) : undefined,
         manualPKRAmount: item.manual_pkr_amount ? parseFloat(item.manual_pkr_amount) : undefined,
         userId: item.user_id,
+        userName: item.user_profiles?.name,
+        userEmail: item.user_profiles?.email,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
       }));

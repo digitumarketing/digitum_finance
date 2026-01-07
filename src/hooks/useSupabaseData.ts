@@ -154,7 +154,7 @@ export const useSupabaseData = () => {
     }
   }, [user, profile]);
 
-  // Load accounts
+  // Load accounts (shared across all users)
   const loadAccounts = useCallback(async () => {
     if (!user || !profile?.is_active) return;
 
@@ -163,7 +163,6 @@ export const useSupabaseData = () => {
       const { data, error } = await supabase
         .from('accounts')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -183,13 +182,13 @@ export const useSupabaseData = () => {
       }));
 
       setAccounts(accountsData);
-      console.log('Accounts loaded:', accountsData.length);
+      console.log('Accounts loaded (company-wide):', accountsData.length);
     } catch (error) {
       console.error('Error in loadAccounts:', error);
     }
   }, [user, profile]);
 
-  // Load exchange rates
+  // Load exchange rates (shared across all users)
   const loadExchangeRates = useCallback(async () => {
     if (!user || !profile?.is_active) return;
 
@@ -198,7 +197,7 @@ export const useSupabaseData = () => {
       const { data, error } = await supabase
         .from('exchange_rates')
         .select('*')
-        .eq('user_id', user.id);
+        .limit(4);
 
       if (error) {
         console.error('Error loading exchange rates:', error);
@@ -211,7 +210,7 @@ export const useSupabaseData = () => {
       });
 
       setExchangeRates(rates);
-      console.log('Exchange rates loaded:', Object.keys(rates).length);
+      console.log('Exchange rates loaded (company-wide):', Object.keys(rates).length);
     } catch (error) {
       console.error('Error in loadExchangeRates:', error);
     }

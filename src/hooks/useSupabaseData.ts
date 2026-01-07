@@ -226,13 +226,7 @@ export const useSupabaseData = () => {
 
       let query = supabase
         .from('income')
-        .select(`
-          *,
-          user_profiles(
-            name,
-            email
-          )
-        `)
+        .select('*')
         .order('date', { ascending: false });
 
       if (!isSuperAdmin) {
@@ -245,6 +239,15 @@ export const useSupabaseData = () => {
         console.error('Error loading income:', error);
         return;
       }
+
+      // Fetch user profiles for the income records
+      const userIds = [...new Set(data.map(item => item.user_id))];
+      const { data: profiles } = await supabase
+        .from('user_profiles')
+        .select('id, name, email')
+        .in('id', userIds);
+
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
       const incomeData = data.map(item => ({
         id: item.id,
@@ -266,8 +269,8 @@ export const useSupabaseData = () => {
         splitAmountPKR: parseFloat(item.split_amount_pkr || 0),
         splitRateUsed: parseFloat(item.split_rate_used || 1),
         userId: item.user_id,
-        userName: item.user_profiles?.name,
-        userEmail: item.user_profiles?.email,
+        userName: profilesMap.get(item.user_id)?.name,
+        userEmail: profilesMap.get(item.user_id)?.email,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
       }));
@@ -289,13 +292,7 @@ export const useSupabaseData = () => {
 
       let query = supabase
         .from('expenses')
-        .select(`
-          *,
-          user_profiles(
-            name,
-            email
-          )
-        `)
+        .select('*')
         .order('date', { ascending: false});
 
       if (!isSuperAdmin) {
@@ -308,6 +305,15 @@ export const useSupabaseData = () => {
         console.error('Error loading expenses:', error);
         return;
       }
+
+      // Fetch user profiles for the expense records
+      const userIds = [...new Set(data.map(item => item.user_id))];
+      const { data: profiles } = await supabase
+        .from('user_profiles')
+        .select('id, name, email')
+        .in('id', userIds);
+
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
       const expensesData = data.map(item => ({
         id: item.id,
@@ -324,8 +330,8 @@ export const useSupabaseData = () => {
         manualConversionRate: item.manual_conversion_rate ? parseFloat(item.manual_conversion_rate) : undefined,
         manualPKRAmount: item.manual_pkr_amount ? parseFloat(item.manual_pkr_amount) : undefined,
         userId: item.user_id,
-        userName: item.user_profiles?.name,
-        userEmail: item.user_profiles?.email,
+        userName: profilesMap.get(item.user_id)?.name,
+        userEmail: profilesMap.get(item.user_id)?.email,
         createdAt: item.created_at,
         updatedAt: item.updated_at,
       }));

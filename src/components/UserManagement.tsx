@@ -413,20 +413,22 @@ export const UserManagement: React.FC = () => {
 // Create User Modal Component
 const CreateUserModal: React.FC<{
   onClose: () => void;
-  onSubmit: (data: CreateUserData) => void;
+  onSubmit: (data: CreateUserData) => Promise<void>;
 }> = ({ onClose, onSubmit }) => {
   const [formData, setFormData] = useState<CreateUserData>({
     email: '',
     name: '',
     password: '',
     role: 'viewer',
-    permissionLevel: 'view_only',
+    permission_level: 'view_only',
     phone: '',
     department: '',
     notes: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -442,10 +444,22 @@ const CreateUserModal: React.FC<{
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSubmit(formData);
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await onSubmit(formData);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create user');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -572,19 +586,27 @@ const CreateUserModal: React.FC<{
             />
           </div>
 
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
+
           <div className="flex space-x-3 pt-4">
             <button
               type="button"
               onClick={onClose}
               className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              disabled={isLoading}
             >
-              Create User
+              {isLoading ? 'Creating...' : 'Create User'}
             </button>
           </div>
         </form>
@@ -597,7 +619,7 @@ const CreateUserModal: React.FC<{
 const EditUserModal: React.FC<{
   user: UserProfile;
   onClose: () => void;
-  onSubmit: (data: UpdateUserData) => void;
+  onSubmit: (data: UpdateUserData) => Promise<void>;
 }> = ({ user, onClose, onSubmit }) => {
   const [formData, setFormData] = useState<UpdateUserData>({
     name: user.name,
@@ -608,10 +630,22 @@ const EditUserModal: React.FC<{
     department: user.department || '',
     notes: user.notes || '',
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await onSubmit(formData);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update user');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -709,19 +743,27 @@ const EditUserModal: React.FC<{
             <label htmlFor="isActive" className="text-sm text-gray-700">Account is active</label>
           </div>
 
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
+
           <div className="flex space-x-3 pt-4">
             <button
               type="button"
               onClick={onClose}
               className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              disabled={isLoading}
             >
-              Update User
+              {isLoading ? 'Updating...' : 'Update User'}
             </button>
           </div>
         </form>

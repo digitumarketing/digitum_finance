@@ -226,7 +226,13 @@ export const useSupabaseData = () => {
 
       let query = supabase
         .from('income')
-        .select('*')
+        .select(`
+          *,
+          user_profiles!inner(
+            name,
+            email
+          )
+        `)
         .order('date', { ascending: false });
 
       if (!isSuperAdmin) {
@@ -283,7 +289,13 @@ export const useSupabaseData = () => {
 
       let query = supabase
         .from('expenses')
-        .select('*')
+        .select(`
+          *,
+          user_profiles!inner(
+            name,
+            email
+          )
+        `)
         .order('date', { ascending: false});
 
       if (!isSuperAdmin) {

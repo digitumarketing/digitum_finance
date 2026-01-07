@@ -554,12 +554,91 @@ export const useSupabaseAuth = () => {
     }
 
     try {
-      // Delete auth user (cascades to profile)
-      const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      console.log('Deleting user and all related data:', userId);
 
-      if (error) {
-        throw new Error(error.message);
+      // Delete all related data first (RLS policies allow super admin to delete)
+      // The database has ON DELETE CASCADE, but we delete explicitly to ensure RLS compliance
+
+      // Delete notifications
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('user_id', userId);
+
+      if (notifError) {
+        console.warn('Error deleting notifications:', notifError);
       }
+
+      // Delete notification settings
+      const { error: notifSettingsError } = await supabase
+        .from('notification_settings')
+        .delete()
+        .eq('user_id', userId);
+
+      if (notifSettingsError) {
+        console.warn('Error deleting notification settings:', notifSettingsError);
+      }
+
+      // Delete expenses
+      const { error: expensesError } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('user_id', userId);
+
+      if (expensesError) {
+        console.warn('Error deleting expenses:', expensesError);
+      }
+
+      // Delete income
+      const { error: incomeError } = await supabase
+        .from('income')
+        .delete()
+        .eq('user_id', userId);
+
+      if (incomeError) {
+        console.warn('Error deleting income:', incomeError);
+      }
+
+      // Delete exchange rates
+      const { error: ratesError } = await supabase
+        .from('exchange_rates')
+        .delete()
+        .eq('user_id', userId);
+
+      if (ratesError) {
+        console.warn('Error deleting exchange rates:', ratesError);
+      }
+
+      // Delete accounts
+      const { error: accountsError } = await supabase
+        .from('accounts')
+        .delete()
+        .eq('user_id', userId);
+
+      if (accountsError) {
+        console.warn('Error deleting accounts:', accountsError);
+      }
+
+      // Delete user profile
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileError) {
+        console.error('Error deleting user profile:', profileError);
+        throw new Error(`Failed to delete user profile: ${profileError.message}`);
+      }
+
+      // Finally delete auth user
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+      if (authError) {
+        console.error('Error deleting auth user:', authError);
+        throw new Error(`Failed to delete auth user: ${authError.message}`);
+      }
+
+      console.log('User deleted successfully:', userId);
 
       // Reload users list
       await loadAllUsers();

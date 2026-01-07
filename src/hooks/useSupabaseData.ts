@@ -228,7 +228,7 @@ export const useSupabaseData = () => {
         .from('income')
         .select(`
           *,
-          user_profiles!income_user_id_fkey(
+          user_profiles(
             name,
             email
           )
@@ -291,7 +291,7 @@ export const useSupabaseData = () => {
         .from('expenses')
         .select(`
           *,
-          user_profiles!expenses_user_id_fkey(
+          user_profiles(
             name,
             email
           )

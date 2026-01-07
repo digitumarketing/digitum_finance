@@ -4,9 +4,10 @@ import { DynamicAccountManagement } from './DynamicAccountManagement';
 import { NotificationSettings } from './NotificationSettings';
 import { DataManagement } from './DataManagement';
 import { DataImport } from './DataImport';
+import { UserManagement } from './UserManagement';
 import { ExchangeRates, Account, NotificationSettings as NotificationSettingsType } from '../types';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
-import { Settings, DollarSign, Building2, Bell, Database, Crown, PieChart } from 'lucide-react';
+import { Settings, DollarSign, Building2, Bell, Database, Crown, PieChart, Users } from 'lucide-react';
 import { ProfitDistributionSettings } from './ProfitDistributionSettings';
 
 interface SettingsViewProps {
@@ -23,7 +24,7 @@ interface SettingsViewProps {
   onBulkImportExpenses?: (data: any[]) => Promise<void>;
 }
 
-type SettingsSection = 'exchange-rates' | 'accounts' | 'notifications' | 'profit-distribution' | 'data';
+type SettingsSection = 'exchange-rates' | 'accounts' | 'notifications' | 'profit-distribution' | 'users' | 'data';
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   exchangeRates,
@@ -69,6 +70,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       icon: PieChart,
       description: 'Configure company and owner profit split ratios',
       requiredRole: null
+    },
+    {
+      id: 'users' as SettingsSection,
+      name: 'User Management',
+      icon: Users,
+      description: 'Create and manage user accounts',
+      requiredRole: 'super_admin'
     },
     {
       id: 'data' as SettingsSection,
@@ -123,7 +131,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       case 'profit-distribution':
         return <ProfitDistributionSettings />;
-      
+
+      case 'users':
+        return <UserManagement />;
+
       case 'data':
         if (onBulkImportIncome && onBulkImportExpenses) {
           return (

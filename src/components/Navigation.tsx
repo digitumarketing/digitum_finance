@@ -100,9 +100,11 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange, 
       <nav className="hidden lg:flex bg-white shadow-sm border-r border-gray-100 w-64 min-h-screen flex-col">
         <div className="p-6">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">D</span>
-            </div>
+            <img
+              src="/digitum_finance.png"
+              alt="Digitum Finance"
+              className="w-10 h-10 object-contain"
+            />
             <div>
               <h1 className="text-xl font-bold text-gray-900">Digitum</h1>
               <p className="text-sm text-gray-500">Finance Manager</p>
@@ -154,9 +156,11 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange, 
       }`}>
         <div className="p-6 pt-16">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">D</span>
-            </div>
+            <img
+              src="/digitum_finance.png"
+              alt="Digitum Finance"
+              className="w-10 h-10 object-contain"
+            />
             <div>
               <h1 className="text-xl font-bold text-gray-900">Digitum</h1>
               <p className="text-sm text-gray-500">Finance Manager</p>

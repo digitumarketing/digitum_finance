@@ -64,8 +64,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading, error,
       <div className="w-full max-w-md">
         {/* Logo and Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg mb-4">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <img
+              src="/digitum_finance.png"
+              alt="Digitum Finance"
+              className="w-24 h-24 object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Digitum</h1>
           <p className="text-gray-600">Secure Finance Management System</p>

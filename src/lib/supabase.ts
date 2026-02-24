@@ -25,6 +25,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       'X-Client-Info': 'digitum-finance@1.0.0',
     },
   },
+  realtime: {
+    params: {
+      eventsPerSecond: 2,
+    },
+  },
 });
 
 // Admin client for administrative operations (user management)

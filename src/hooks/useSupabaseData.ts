@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useSupabaseAuth } from './useSupabaseAuth';
-import { 
-  Income, 
-  Expense, 
-  Account, 
-  ExchangeRates, 
+import {
+  Income,
+  Expense,
+  Account,
+  ExchangeRates,
   Notification,
   NotificationSettings,
   Currency,
@@ -35,6 +35,9 @@ export const useSupabaseData = () => {
     roshaanPercentage: 25,
     shahbazPercentage: 25
   });
+
+  // Track if data has been loaded for current user to prevent auto-refresh on tab switch
+  const hasLoadedDataRef = useRef<string | null>(null);
 
   // Load profit distribution settings for selected month
   useEffect(() => {
@@ -90,14 +93,21 @@ export const useSupabaseData = () => {
     loadProfitDistribution();
   }, [user, selectedMonth]);
 
-  // Load all data when user changes
+  // Load all data when user changes (only on initial load, not on tab switches)
   useEffect(() => {
     if (user && profile && profile.is_active) {
-      console.log('Loading data for user:', user.id);
-      loadAllData();
-    } else {
+      // Only load data if we haven't loaded it for this user yet
+      if (hasLoadedDataRef.current !== user.id) {
+        console.log('Loading data for user:', user.id);
+        hasLoadedDataRef.current = user.id;
+        loadAllData();
+      } else {
+        console.log('Data already loaded for this user, skipping reload');
+      }
+    } else if (!user || !profile || !profile.is_active) {
       console.log('Resetting data - no active user');
       // Reset data when user logs out
+      hasLoadedDataRef.current = null;
       setIncome([]);
       setExpenses([]);
       setAccounts([]);

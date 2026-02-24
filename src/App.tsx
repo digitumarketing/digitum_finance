@@ -91,11 +91,12 @@ function AppRoutes() {
               allIncome={allIncome}
               allExpenses={allExpenses}
               exchangeRates={exchangeRates}
+              accounts={accounts}
               isSuperAdmin={isSuperAdmin}
               onDeleteIncome={deleteIncome}
               onDeleteExpense={deleteExpense}
-              onEditIncome={() => {}}
-              onEditExpense={() => {}}
+              onUpdateIncome={updateIncome}
+              onUpdateExpense={updateExpense}
               onAddIncome={() => navigate('/income')}
               onAddExpense={() => navigate('/expenses')}
             />

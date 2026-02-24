@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { DashboardSummary } from '../components/DashboardSummary';
-import { Download, Upload, Plus, Search, Calendar, Filter, MoreVertical, ChevronDown } from 'lucide-react';
+import { IncomeForm } from '../components/IncomeForm';
+import { ExpenseForm } from '../components/ExpenseForm';
+import { Download, Upload, Plus, Search, Calendar, Filter, MoreVertical, ChevronDown, Edit2, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../utils/helpers';
 import * as XLSX from 'xlsx';
 
@@ -10,11 +12,12 @@ interface DashboardProps {
   allIncome: any[];
   allExpenses: any[];
   exchangeRates: any;
+  accounts: any[];
   isSuperAdmin: boolean;
   onDeleteIncome: (id: string) => Promise<void>;
   onDeleteExpense: (id: string) => Promise<void>;
-  onEditIncome: (income: any) => void;
-  onEditExpense: (expense: any) => void;
+  onUpdateIncome: (id: string, data: any) => Promise<void>;
+  onUpdateExpense: (id: string, data: any) => Promise<void>;
   onAddIncome: () => void;
   onAddExpense: () => void;
 }
@@ -25,11 +28,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   allIncome,
   allExpenses,
   exchangeRates,
+  accounts,
   isSuperAdmin,
   onDeleteIncome,
   onDeleteExpense,
-  onEditIncome,
-  onEditExpense,
+  onUpdateIncome,
+  onUpdateExpense,
   onAddIncome,
   onAddExpense,
 }) => {
@@ -42,6 +46,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
   const [currentPage, setCurrentPage] = useState(1);
+  const [editingIncome, setEditingIncome] = useState<any>(null);
+  const [editingExpense, setEditingExpense] = useState<any>(null);
   const itemsPerPage = 10;
 
   // Combine income and expenses into transactions
@@ -195,9 +201,53 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
+  const handleEditIncome = (income: any) => {
+    setEditingIncome(income);
+  };
+
+  const handleEditExpense = (expense: any) => {
+    setEditingExpense(expense);
+  };
+
+  const handleUpdateIncome = async (data: any) => {
+    if (editingIncome) {
+      await onUpdateIncome(editingIncome.id, data);
+      setEditingIncome(null);
+    }
+  };
+
+  const handleUpdateExpense = async (data: any) => {
+    if (editingExpense) {
+      await onUpdateExpense(editingExpense.id, data);
+      setEditingExpense(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <DashboardSummary summary={summary} selectedMonth={selectedMonth} />
+
+      {/* Edit Income Form */}
+      {editingIncome && (
+        <IncomeForm
+          onSubmit={handleUpdateIncome}
+          onCancel={() => setEditingIncome(null)}
+          exchangeRates={exchangeRates}
+          accounts={accounts.map(acc => ({ name: acc.name, currency: acc.currency }))}
+          editData={editingIncome}
+        />
+      )}
+
+      {/* Edit Expense Form */}
+      {editingExpense && (
+        <ExpenseForm
+          onSubmit={handleUpdateExpense}
+          onCancel={() => setEditingExpense(null)}
+          exchangeRates={exchangeRates}
+          accounts={accounts.map(acc => ({ name: acc.name, currency: acc.currency }))}
+          editData={editingExpense}
+        />
+      )}
 
       {/* Transactions Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -255,9 +305,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Search and Filters Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
             {/* Search */}
-            <div className="relative">
+            <div className="relative md:col-span-2 lg:col-span-1 xl:col-span-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
@@ -304,19 +354,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </select>
 
             {/* Date Range */}
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
+            <div className="md:col-span-2 lg:col-span-3 xl:col-span-2">
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  placeholder="From"
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  placeholder="To"
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -418,12 +472,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               <td className="py-3 pr-4 text-sm text-gray-900">{transaction.category}</td>
                               <td className="py-3 pr-4 text-sm text-gray-600">{transaction.account}</td>
                               <td className="py-3">
-                                <button
-                                  onClick={() => transaction.type === 'income' ? onEditIncome(transaction) : onEditExpense(transaction)}
-                                  className="text-gray-400 hover:text-gray-600"
-                                >
-                                  <MoreVertical className="w-4 h-4" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => transaction.type === 'income' ? handleEditIncome(transaction) : handleEditExpense(transaction)}
+                                    className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                    title="Edit"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                  {isSuperAdmin && (
+                                    <button
+                                      onClick={async () => {
+                                        if (window.confirm('Are you sure you want to delete this transaction?')) {
+                                          try {
+                                            if (transaction.type === 'income') {
+                                              await onDeleteIncome(transaction.id);
+                                            } else {
+                                              await onDeleteExpense(transaction.id);
+                                            }
+                                          } catch (error) {
+                                            console.error('Error deleting transaction:', error);
+                                            alert('Failed to delete transaction');
+                                          }
+                                        }
+                                      }}
+                                      className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           ))}

@@ -1,29 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { useSupabaseData } from './hooks/useSupabaseData';
 import { LoginForm } from './components/LoginForm';
-import { ProtectedRoute } from './components/ProtectedRoute';
 import { SecurityProvider } from './components/SecurityProvider';
-import { UserProfile } from './components/UserProfile';
-import { Navigation } from './components/Navigation';
-import { MonthSelector } from './components/MonthSelector';
-import { DashboardSummary } from './components/DashboardSummary';
-import { IncomeForm } from './components/IncomeForm';
-import { ExpenseForm } from './components/ExpenseForm';
-import { DataTable } from './components/DataTable';
-import { AccountsView } from './components/AccountsView';
-import { ReportsView } from './components/ReportsView';
-import { SettingsView } from './components/SettingsView';
-import { NotificationPanel } from './components/NotificationPanel';
-import { Plus, Shield, AlertTriangle, Database, Trash2 } from 'lucide-react';
+import { MainLayout } from './components/MainLayout';
+import { Dashboard } from './pages/Dashboard';
+import { Income } from './pages/Income';
+import { Expenses } from './pages/Expenses';
+import { Accounts } from './pages/Accounts';
+import { Reports } from './pages/Reports';
+import { Settings } from './pages/Settings';
+import { AlertTriangle } from 'lucide-react';
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [showIncomeForm, setShowIncomeForm] = useState(false);
-  const [showExpenseForm, setShowExpenseForm] = useState(false);
-  const [editingIncome, setEditingIncome] = useState<any>(null);
-  const [editingExpense, setEditingExpense] = useState<any>(null);
-
   const { profile } = useSupabaseAuth();
   const isSuperAdmin = profile?.role === 'super_admin';
 
@@ -56,7 +46,6 @@ function AppContent() {
     deleteNotification,
     clearAllNotifications,
     updateNotificationSettings,
-    refreshData,
     recalculateAllBalances,
     bulkImportIncome,
     bulkImportExpenses,
@@ -64,394 +53,134 @@ function AppContent() {
     deleteAllExpenses,
   } = useSupabaseData();
 
-  const handleAddIncome = async (data: any) => {
-    console.log('Adding income:', data);
-    if (editingIncome) {
-      console.log('Updating income:', editingIncome.id);
-      await updateIncome(editingIncome.id, data);
-      setEditingIncome(null);
-    } else {
-      console.log('Creating new income entry');
-      await addIncome(data);
-    }
-    setShowIncomeForm(false);
-  };
-
-  const handleEditIncome = (income: any) => {
-    console.log('Editing income:', income);
-    setEditingIncome(income);
-    setShowIncomeForm(true);
-  };
-
-  const handleAddExpense = async (data: any) => {
-    console.log('Adding expense:', data);
-    if (editingExpense) {
-      console.log('Updating expense:', editingExpense.id);
-      await updateExpense(editingExpense.id, data);
-      setEditingExpense(null);
-    } else {
-      console.log('Creating new expense entry');
-      await addExpense(data);
-    }
-    setShowExpenseForm(false);
-  };
-
-  const handleEditExpense = (expense: any) => {
-    console.log('Editing expense:', expense);
-    setEditingExpense(expense);
-    setShowExpenseForm(true);
-  };
-
-  const canAccessTab = (tab: string) => {
-    // For now, super admin can access everything
-    return true;
-  };
-
-  const renderMainContent = () => {
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading financial data...</p>
-          </div>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading financial data...</p>
         </div>
-      );
-    }
-
-    switch (activeTab) {
-      case 'dashboard':
-        return (
-          <div className="space-y-6">
-            <DashboardSummary summary={dashboardSummary} selectedMonth={selectedMonth} />
-
-            {/* Recent Income */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Recent Income</h3>
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-green-600 font-medium">
-                    {income.length} transactions
-                  </span>
-                  {income.length > 0 && (
-                    <button
-                      onClick={async () => {
-                        if (window.confirm(`Are you sure you want to delete all ${income.length} income transactions? This action cannot be undone.`)) {
-                          await deleteAllIncome();
-                        }
-                      }}
-                      className="flex items-center space-x-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Delete All</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="max-h-[600px] overflow-y-auto">
-                <DataTable
-                  data={income.slice(0, 10)}
-                  type="income"
-                  onDelete={deleteIncome}
-                  onEdit={handleEditIncome}
-                  exchangeRates={exchangeRates}
-                  showUserAttribution={isSuperAdmin}
-                />
-              </div>
-            </div>
-
-            {/* Recent Expenses */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Recent Expenses</h3>
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-red-600 font-medium">
-                    {expenses.length} transactions
-                  </span>
-                  {expenses.length > 0 && (
-                    <button
-                      onClick={async () => {
-                        if (window.confirm(`Are you sure you want to delete all ${expenses.length} expense transactions? This action cannot be undone.`)) {
-                          await deleteAllExpenses();
-                        }
-                      }}
-                      className="flex items-center space-x-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Delete All</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="max-h-[600px] overflow-y-auto">
-                <DataTable
-                  data={expenses.slice(0, 10)}
-                  type="expense"
-                  onDelete={deleteExpense}
-                  onEdit={handleEditExpense}
-                  exchangeRates={exchangeRates}
-                  showUserAttribution={isSuperAdmin}
-                />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'income':
-        return (
-          <div className="space-y-6">
-            {/* Header with Add Button */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Income Management</h2>
-                <p className="text-gray-600 mt-1">Track and manage your income sources with payment status</p>
-              </div>
-              <div className="flex items-center space-x-3">
-                {allIncome.length > 0 && (
-                  <button
-                    onClick={async () => {
-                      if (window.confirm(`Are you sure you want to delete all ${allIncome.length} income transactions? This action cannot be undone.`)) {
-                        await deleteAllIncome();
-                      }
-                    }}
-                    className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete All</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setEditingIncome(null);
-                    setShowIncomeForm(true);
-                  }}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors w-full sm:w-auto justify-center"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Income</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Income Form */}
-            {showIncomeForm && (
-              <IncomeForm
-                onSubmit={handleAddIncome}
-                onCancel={() => {
-                  setShowIncomeForm(false);
-                  setEditingIncome(null);
-                }}
-                exchangeRates={exchangeRates}
-                accounts={accounts.map(acc => ({ name: acc.name, currency: acc.currency }))}
-                editData={editingIncome}
-              />
-            )}
-
-            {/* Income Table */}
-            <DataTable
-              data={income}
-              type="income"
-              onDelete={deleteIncome}
-              onEdit={handleEditIncome}
-              exchangeRates={exchangeRates}
-              showUserAttribution={isSuperAdmin}
-            />
-          </div>
-        );
-
-      case 'expenses':
-        return (
-          <div className="space-y-6">
-            {/* Header with Add Button */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Expense Management</h2>
-                <p className="text-gray-600 mt-1">Track and manage your business expenses</p>
-              </div>
-              <div className="flex items-center space-x-3">
-                {allExpenses.length > 0 && (
-                  <button
-                    onClick={async () => {
-                      if (window.confirm(`Are you sure you want to delete all ${allExpenses.length} expense transactions? This action cannot be undone.`)) {
-                        await deleteAllExpenses();
-                      }
-                    }}
-                    className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete All</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setEditingExpense(null);
-                    setShowExpenseForm(true);
-                  }}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors w-full sm:w-auto justify-center"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Expense</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Expense Form */}
-            {showExpenseForm && (
-              <ExpenseForm
-                onSubmit={handleAddExpense}
-                onCancel={() => {
-                  setShowExpenseForm(false);
-                  setEditingExpense(null);
-                }}
-                exchangeRates={exchangeRates}
-                accounts={accounts.map(acc => ({ name: acc.name, currency: acc.currency }))}
-                editData={editingExpense}
-              />
-            )}
-
-            {/* Expenses Table */}
-            <DataTable
-              data={expenses}
-              type="expense"
-              onDelete={deleteExpense}
-              onEdit={handleEditExpense}
-              exchangeRates={exchangeRates}
-              showUserAttribution={isSuperAdmin}
-            />
-          </div>
-        );
-
-      case 'accounts':
-        return (
-          <AccountsView
-            accounts={accounts}
-            onRefreshBalances={recalculateAllBalances}
-            totalCompanyBalance={dashboardSummary.currentMonth.remainingCompanyBalance}
-          />
-        );
-
-      case 'reports':
-        return (
-          <ReportsView 
-            income={income}
-            expenses={expenses}
-            allIncome={allIncome}
-            allExpenses={allExpenses}
-            selectedMonth={selectedMonth}
-          />
-        );
-
-      case 'settings':
-        return (
-          <SettingsView
-            exchangeRates={exchangeRates}
-            onUpdateRates={setExchangeRates}
-            accounts={accounts}
-            onUpdateAccount={updateAccountBalance}
-            onAddAccount={addAccount}
-            onDeleteAccount={deleteAccount}
-            notificationSettings={notificationSettings}
-            onUpdateNotificationSettings={updateNotificationSettings}
-            onRequestNotificationPermission={async () => {
-              if ('Notification' in window) {
-                const permission = await Notification.requestPermission();
-                return permission === 'granted';
-              }
-              return false;
-            }}
-            onBulkImportIncome={bulkImportIncome}
-            onBulkImportExpenses={bulkImportExpenses}
-          />
-        );
-
-      default:
-        return (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-            <AlertTriangle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Page Not Found</h3>
-            <p className="text-gray-500">The requested page could not be found.</p>
-          </div>
-        );
-    }
-  };
-
-  const getPageTitle = () => {
-    switch (activeTab) {
-      case 'dashboard': return 'Dashboard';
-      case 'income': return 'Income Management';
-      case 'expenses': return 'Expense Management';
-      case 'accounts': return 'Account Balances';
-      case 'reports': return 'Reports & Analytics';
-      case 'settings': return 'Settings';
-      default: return 'Digitum Finance';
-    }
-  };
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Navigation */}
-      <Navigation 
-        activeTab={activeTab} 
-        onTabChange={setActiveTab}
-        canAccessTab={canAccessTab}
-      />
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-0 overflow-x-hidden">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-100 p-4 lg:p-6 pt-16 lg:pt-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 max-w-full">
-            <div className="flex items-center space-x-4">
-              <div>
-                <h1 className="text-xl font-semib old text-gray-900">
-                  {getPageTitle()}
-                </h1>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Database className="w-4 h-4 text-blue-600" />
-                <span className="text-sm text-blue-600 font-medium">Supabase Database</span>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-shrink-0">
-              {/* Notification Panel */}
-              <NotificationPanel
-                notifications={notifications}
-                unreadCount={unreadNotifications}
-                onMarkAsRead={markNotificationAsRead}
-                onMarkAllAsRead={markAllNotificationsAsRead}
-                onDelete={deleteNotification}
-                onClearAll={clearAllNotifications}
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <MainLayout
+              selectedMonth={selectedMonth}
+              notifications={notifications}
+              unreadNotifications={unreadNotifications}
+              onMonthChange={setSelectedMonth}
+              onMarkNotificationAsRead={markNotificationAsRead}
+              onMarkAllNotificationsAsRead={markAllNotificationsAsRead}
+              onDeleteNotification={deleteNotification}
+              onClearAllNotifications={clearAllNotifications}
+            />
+          }
+        >
+          <Route
+            index
+            element={
+              <Dashboard
+                summary={dashboardSummary}
+                selectedMonth={selectedMonth}
+                income={income}
+                expenses={expenses}
+                exchangeRates={exchangeRates}
+                isSuperAdmin={isSuperAdmin}
+                onDeleteIncome={deleteIncome}
+                onDeleteExpense={deleteExpense}
+                onEditIncome={() => {}}
+                onEditExpense={() => {}}
+                onDeleteAllIncome={deleteAllIncome}
+                onDeleteAllExpenses={deleteAllExpenses}
               />
-
-              {/* Month Selector */}
-              {activeTab !== 'settings' && (
-                <div className="flex-shrink-0">
-                  <MonthSelector
-                    selectedMonth={selectedMonth}
-                    onMonthChange={setSelectedMonth}
-                  />
-                </div>
-              )}
-
-              {/* User Profile */}
-              <UserProfile />
-            </div>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6 max-w-full overflow-x-hidden">
-          {renderMainContent()}
-        </main>
-      </div>
-    </div>
+            }
+          />
+          <Route
+            path="income"
+            element={
+              <Income
+                income={income}
+                allIncome={allIncome}
+                exchangeRates={exchangeRates}
+                accounts={accounts}
+                isSuperAdmin={isSuperAdmin}
+                onAddIncome={addIncome}
+                onUpdateIncome={updateIncome}
+                onDeleteIncome={deleteIncome}
+                onDeleteAllIncome={deleteAllIncome}
+              />
+            }
+          />
+          <Route
+            path="expenses"
+            element={
+              <Expenses
+                expenses={expenses}
+                allExpenses={allExpenses}
+                exchangeRates={exchangeRates}
+                accounts={accounts}
+                isSuperAdmin={isSuperAdmin}
+                onAddExpense={addExpense}
+                onUpdateExpense={updateExpense}
+                onDeleteExpense={deleteExpense}
+                onDeleteAllExpenses={deleteAllExpenses}
+              />
+            }
+          />
+          <Route
+            path="accounts"
+            element={
+              <Accounts
+                accounts={accounts}
+                totalCompanyBalance={dashboardSummary.currentMonth.remainingCompanyBalance}
+                onRefreshBalances={recalculateAllBalances}
+              />
+            }
+          />
+          <Route
+            path="reports"
+            element={
+              <Reports
+                income={income}
+                expenses={expenses}
+                allIncome={allIncome}
+                allExpenses={allExpenses}
+                selectedMonth={selectedMonth}
+              />
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <Settings
+                exchangeRates={exchangeRates}
+                accounts={accounts}
+                notificationSettings={notificationSettings}
+                onUpdateRates={setExchangeRates}
+                onUpdateAccount={updateAccountBalance}
+                onAddAccount={addAccount}
+                onDeleteAccount={deleteAccount}
+                onUpdateNotificationSettings={updateNotificationSettings}
+                onBulkImportIncome={bulkImportIncome}
+                onBulkImportExpenses={bulkImportExpenses}
+              />
+            }
+          />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
 function App() {
-  const { user, profile, isAuthenticated, isLoading, error, login, logout, clearError } = useSupabaseAuth();
+  const { user, profile, isAuthenticated, isLoading, error, login, clearError } = useSupabaseAuth();
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -459,7 +188,7 @@ function App() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600 mb-2">Loading Digitum Finance...</p>
           <p className="text-sm text-gray-500 mt-2">Connecting to Supabase...</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
           >
@@ -470,7 +199,6 @@ function App() {
     );
   }
 
-  // Show error state if there's a critical error
   if (error && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -494,10 +222,9 @@ function App() {
     );
   }
 
-  // Show login form if not authenticated
   if (!isAuthenticated || !user || !profile) {
     return (
-      <LoginForm 
+      <LoginForm
         onLogin={async ({ email, password }) => await login(email, password)}
         isLoading={isLoading}
         error={error}
@@ -506,7 +233,6 @@ function App() {
     );
   }
 
-  // Show main app with security context
   return (
     <SecurityProvider user={profile}>
       <AppContent />

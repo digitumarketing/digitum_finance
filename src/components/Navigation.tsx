@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  TrendingUp, 
-  TrendingDown, 
-  Wallet, 
-  Settings, 
+import { NavLink } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  Settings,
   FileText,
   Lock,
   Menu,
@@ -13,6 +14,7 @@ import {
 
 type NavigationItem = {
   id: string;
+  path: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   requiredPermission?: {
@@ -22,56 +24,59 @@ type NavigationItem = {
 };
 
 interface NavigationProps {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
   canAccessTab: (tab: string) => boolean;
 }
 
 const navigationItems: NavigationItem[] = [
-  { 
-    id: 'dashboard', 
-    label: 'Dashboard', 
+  {
+    id: 'dashboard',
+    path: '/',
+    label: 'Dashboard',
     icon: LayoutDashboard,
     requiredPermission: { resource: 'dashboard', action: 'read' }
   },
-  { 
-    id: 'income', 
-    label: 'Income', 
+  {
+    id: 'income',
+    path: '/income',
+    label: 'Income',
     icon: TrendingUp,
     requiredPermission: { resource: 'income', action: 'write' }
   },
-  { 
-    id: 'expenses', 
-    label: 'Expenses', 
+  {
+    id: 'expenses',
+    path: '/expenses',
+    label: 'Expenses',
     icon: TrendingDown,
     requiredPermission: { resource: 'expenses', action: 'write' }
   },
-  { 
-    id: 'accounts', 
-    label: 'Accounts', 
+  {
+    id: 'accounts',
+    path: '/accounts',
+    label: 'Accounts',
     icon: Wallet,
     requiredPermission: { resource: 'accounts', action: 'read' }
   },
-  { 
-    id: 'reports', 
-    label: 'Reports', 
+  {
+    id: 'reports',
+    path: '/reports',
+    label: 'Reports',
     icon: FileText,
     requiredPermission: { resource: 'reports', action: 'read' }
   },
-  { 
-    id: 'settings', 
-    label: 'Settings', 
+  {
+    id: 'settings',
+    path: '/settings',
+    label: 'Settings',
     icon: Settings,
     requiredPermission: { resource: 'settings', action: 'read' }
   },
 ];
 
-export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange, canAccessTab }) => {
+export const Navigation: React.FC<NavigationProps> = ({ canAccessTab }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleTabChange = (tab: string) => {
-    onTabChange(tab);
-    setIsMobileMenuOpen(false); // Close mobile menu when tab is selected
+  const handleLinkClick = () => {
+    setIsMobileMenuOpen(false); // Close mobile menu when link is clicked
   };
 
   return (
@@ -115,28 +120,39 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange, 
         <div className="flex-1 px-3 pb-6">
           {navigationItems.map((item) => {
             const hasAccess = canAccessTab(item.id);
-            
-            return (
-              <button
-                key={item.id}
-                onClick={() => hasAccess && onTabChange(item.id)}
-                disabled={!hasAccess}
-                className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-left transition-all duration-200 mb-1 ${
-                  activeTab === item.id && hasAccess
-                    ? 'bg-green-50 text-green-700 font-medium border-r-2 border-green-500 shadow-sm'
-                    : hasAccess
-                    ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    : 'text-gray-400 cursor-not-allowed opacity-50'
-                }`}
-              >
-                <item.icon className={`w-5 h-5 ${
-                  activeTab === item.id && hasAccess ? 'text-green-600' : ''
-                }`} />
-                <span>{item.label}</span>
-                {!hasAccess && (
+
+            if (!hasAccess) {
+              return (
+                <div
+                  key={item.id}
+                  className="w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-left transition-all duration-200 mb-1 text-gray-400 cursor-not-allowed opacity-50"
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.label}</span>
                   <Lock className="w-3 h-3 text-gray-400 ml-auto" />
+                </div>
+              );
+            }
+
+            return (
+              <NavLink
+                key={item.id}
+                to={item.path}
+                className={({ isActive }) =>
+                  `w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-left transition-all duration-200 mb-1 ${
+                    isActive
+                      ? 'bg-green-50 text-green-700 font-medium border-r-2 border-green-500 shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <item.icon className={`w-5 h-5 ${isActive ? 'text-green-600' : ''}`} />
+                    <span>{item.label}</span>
+                  </>
                 )}
-              </button>
+              </NavLink>
             );
           })}
         </div>
@@ -171,28 +187,40 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange, 
         <div className="flex-1 px-3 pb-6">
           {navigationItems.map((item) => {
             const hasAccess = canAccessTab(item.id);
-            
-            return (
-              <button
-                key={item.id}
-                onClick={() => hasAccess && handleTabChange(item.id)}
-                disabled={!hasAccess}
-                className={`w-full flex items-center space-x-3 px-3 py-4 rounded-lg text-left transition-all duration-200 mb-1 ${
-                  activeTab === item.id && hasAccess
-                    ? 'bg-green-50 text-green-700 font-medium border-r-2 border-green-500 shadow-sm'
-                    : hasAccess
-                    ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    : 'text-gray-400 cursor-not-allowed opacity-50'
-                }`}
-              >
-                <item.icon className={`w-5 h-5 ${
-                  activeTab === item.id && hasAccess ? 'text-green-600' : ''
-                }`} />
-                <span className="text-base">{item.label}</span>
-                {!hasAccess && (
+
+            if (!hasAccess) {
+              return (
+                <div
+                  key={item.id}
+                  className="w-full flex items-center space-x-3 px-3 py-4 rounded-lg text-left transition-all duration-200 mb-1 text-gray-400 cursor-not-allowed opacity-50"
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="text-base">{item.label}</span>
                   <Lock className="w-3 h-3 text-gray-400 ml-auto" />
+                </div>
+              );
+            }
+
+            return (
+              <NavLink
+                key={item.id}
+                to={item.path}
+                onClick={handleLinkClick}
+                className={({ isActive }) =>
+                  `w-full flex items-center space-x-3 px-3 py-4 rounded-lg text-left transition-all duration-200 mb-1 ${
+                    isActive
+                      ? 'bg-green-50 text-green-700 font-medium border-r-2 border-green-500 shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <item.icon className={`w-5 h-5 ${isActive ? 'text-green-600' : ''}`} />
+                    <span className="text-base">{item.label}</span>
+                  </>
                 )}
-              </button>
+              </NavLink>
             );
           })}
         </div>
@@ -211,26 +239,33 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange, 
         <div className="flex items-center justify-around py-2">
           {navigationItems.slice(0, 5).map((item) => {
             const hasAccess = canAccessTab(item.id);
-            
+
+            if (!hasAccess) {
+              return (
+                <div
+                  key={item.id}
+                  className="flex flex-col items-center justify-center p-2 min-w-0 flex-1 text-gray-400 opacity-50 relative"
+                >
+                  <item.icon className="w-5 h-5 mb-1" />
+                  <span className="text-xs truncate">{item.label}</span>
+                  <Lock className="w-2 h-2 absolute top-1 right-1" />
+                </div>
+              );
+            }
+
             return (
-              <button
+              <NavLink
                 key={item.id}
-                onClick={() => hasAccess && onTabChange(item.id)}
-                disabled={!hasAccess}
-                className={`flex flex-col items-center justify-center p-2 min-w-0 flex-1 ${
-                  activeTab === item.id && hasAccess
-                    ? 'text-green-600'
-                    : hasAccess
-                    ? 'text-gray-600'
-                    : 'text-gray-400 opacity-50'
-                }`}
+                to={item.path}
+                className={({ isActive }) =>
+                  `flex flex-col items-center justify-center p-2 min-w-0 flex-1 ${
+                    isActive ? 'text-green-600' : 'text-gray-600'
+                  }`
+                }
               >
                 <item.icon className="w-5 h-5 mb-1" />
                 <span className="text-xs truncate">{item.label}</span>
-                {!hasAccess && (
-                  <Lock className="w-2 h-2 absolute top-1 right-1" />
-                )}
-              </button>
+              </NavLink>
             );
           })}
         </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { useSupabaseData } from './hooks/useSupabaseData';
 import { LoginForm } from './components/LoginForm';
@@ -14,6 +14,7 @@ import { Settings } from './pages/Settings';
 import { AlertTriangle } from 'lucide-react';
 
 function AppContent() {
+  const navigate = useNavigate();
   const { profile } = useSupabaseAuth();
   const isSuperAdmin = profile?.role === 'super_admin';
 
@@ -88,16 +89,16 @@ function AppContent() {
               <Dashboard
                 summary={dashboardSummary}
                 selectedMonth={selectedMonth}
-                income={income}
-                expenses={expenses}
+                allIncome={allIncome}
+                allExpenses={allExpenses}
                 exchangeRates={exchangeRates}
                 isSuperAdmin={isSuperAdmin}
                 onDeleteIncome={deleteIncome}
                 onDeleteExpense={deleteExpense}
                 onEditIncome={() => {}}
                 onEditExpense={() => {}}
-                onDeleteAllIncome={deleteAllIncome}
-                onDeleteAllExpenses={deleteAllExpenses}
+                onAddIncome={() => navigate('/income')}
+                onAddExpense={() => navigate('/expenses')}
               />
             }
           />

@@ -13,7 +13,7 @@ import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { AlertTriangle } from 'lucide-react';
 
-function AppContent() {
+function AppRoutes() {
   const navigate = useNavigate();
   const { profile } = useSupabaseAuth();
   const isSuperAdmin = profile?.role === 'super_admin';
@@ -66,115 +66,121 @@ function AppContent() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <MainLayout
+            selectedMonth={selectedMonth}
+            notifications={notifications}
+            unreadNotifications={unreadNotifications}
+            onMonthChange={setSelectedMonth}
+            onMarkNotificationAsRead={markNotificationAsRead}
+            onMarkAllNotificationsAsRead={markAllNotificationsAsRead}
+            onDeleteNotification={deleteNotification}
+            onClearAllNotifications={clearAllNotifications}
+          />
+        }
+      >
         <Route
-          path="/"
+          index
           element={
-            <MainLayout
+            <Dashboard
+              summary={dashboardSummary}
               selectedMonth={selectedMonth}
-              notifications={notifications}
-              unreadNotifications={unreadNotifications}
-              onMonthChange={setSelectedMonth}
-              onMarkNotificationAsRead={markNotificationAsRead}
-              onMarkAllNotificationsAsRead={markAllNotificationsAsRead}
-              onDeleteNotification={deleteNotification}
-              onClearAllNotifications={clearAllNotifications}
+              allIncome={allIncome}
+              allExpenses={allExpenses}
+              exchangeRates={exchangeRates}
+              isSuperAdmin={isSuperAdmin}
+              onDeleteIncome={deleteIncome}
+              onDeleteExpense={deleteExpense}
+              onEditIncome={() => {}}
+              onEditExpense={() => {}}
+              onAddIncome={() => navigate('/income')}
+              onAddExpense={() => navigate('/expenses')}
             />
           }
-        >
-          <Route
-            index
-            element={
-              <Dashboard
-                summary={dashboardSummary}
-                selectedMonth={selectedMonth}
-                allIncome={allIncome}
-                allExpenses={allExpenses}
-                exchangeRates={exchangeRates}
-                isSuperAdmin={isSuperAdmin}
-                onDeleteIncome={deleteIncome}
-                onDeleteExpense={deleteExpense}
-                onEditIncome={() => {}}
-                onEditExpense={() => {}}
-                onAddIncome={() => navigate('/income')}
-                onAddExpense={() => navigate('/expenses')}
-              />
-            }
-          />
-          <Route
-            path="income"
-            element={
-              <Income
-                income={income}
-                allIncome={allIncome}
-                exchangeRates={exchangeRates}
-                accounts={accounts}
-                isSuperAdmin={isSuperAdmin}
-                onAddIncome={addIncome}
-                onUpdateIncome={updateIncome}
-                onDeleteIncome={deleteIncome}
-                onDeleteAllIncome={deleteAllIncome}
-              />
-            }
-          />
-          <Route
-            path="expenses"
-            element={
-              <Expenses
-                expenses={expenses}
-                allExpenses={allExpenses}
-                exchangeRates={exchangeRates}
-                accounts={accounts}
-                isSuperAdmin={isSuperAdmin}
-                onAddExpense={addExpense}
-                onUpdateExpense={updateExpense}
-                onDeleteExpense={deleteExpense}
-                onDeleteAllExpenses={deleteAllExpenses}
-              />
-            }
-          />
-          <Route
-            path="accounts"
-            element={
-              <Accounts
-                accounts={accounts}
-                totalCompanyBalance={dashboardSummary.currentMonth.remainingCompanyBalance}
-                onRefreshBalances={recalculateAllBalances}
-              />
-            }
-          />
-          <Route
-            path="reports"
-            element={
-              <Reports
-                income={income}
-                expenses={expenses}
-                allIncome={allIncome}
-                allExpenses={allExpenses}
-                selectedMonth={selectedMonth}
-              />
-            }
-          />
-          <Route
-            path="settings"
-            element={
-              <Settings
-                exchangeRates={exchangeRates}
-                accounts={accounts}
-                notificationSettings={notificationSettings}
-                onUpdateRates={setExchangeRates}
-                onUpdateAccount={updateAccountBalance}
-                onAddAccount={addAccount}
-                onDeleteAccount={deleteAccount}
-                onUpdateNotificationSettings={updateNotificationSettings}
-                onBulkImportIncome={bulkImportIncome}
-                onBulkImportExpenses={bulkImportExpenses}
-              />
-            }
-          />
-        </Route>
-      </Routes>
+        />
+        <Route
+          path="income"
+          element={
+            <Income
+              income={income}
+              allIncome={allIncome}
+              exchangeRates={exchangeRates}
+              accounts={accounts}
+              isSuperAdmin={isSuperAdmin}
+              onAddIncome={addIncome}
+              onUpdateIncome={updateIncome}
+              onDeleteIncome={deleteIncome}
+              onDeleteAllIncome={deleteAllIncome}
+            />
+          }
+        />
+        <Route
+          path="expenses"
+          element={
+            <Expenses
+              expenses={expenses}
+              allExpenses={allExpenses}
+              exchangeRates={exchangeRates}
+              accounts={accounts}
+              isSuperAdmin={isSuperAdmin}
+              onAddExpense={addExpense}
+              onUpdateExpense={updateExpense}
+              onDeleteExpense={deleteExpense}
+              onDeleteAllExpenses={deleteAllExpenses}
+            />
+          }
+        />
+        <Route
+          path="accounts"
+          element={
+            <Accounts
+              accounts={accounts}
+              totalCompanyBalance={dashboardSummary.currentMonth.remainingCompanyBalance}
+              onRefreshBalances={recalculateAllBalances}
+            />
+          }
+        />
+        <Route
+          path="reports"
+          element={
+            <Reports
+              income={income}
+              expenses={expenses}
+              allIncome={allIncome}
+              allExpenses={allExpenses}
+              selectedMonth={selectedMonth}
+            />
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <Settings
+              exchangeRates={exchangeRates}
+              accounts={accounts}
+              notificationSettings={notificationSettings}
+              onUpdateRates={setExchangeRates}
+              onUpdateAccount={updateAccountBalance}
+              onAddAccount={addAccount}
+              onDeleteAccount={deleteAccount}
+              onUpdateNotificationSettings={updateNotificationSettings}
+              onBulkImportIncome={bulkImportIncome}
+              onBulkImportExpenses={bulkImportExpenses}
+            />
+          }
+        />
+      </Route>
+    </Routes>
+  );
+}
+
+function AppContent() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

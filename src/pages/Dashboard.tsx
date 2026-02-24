@@ -40,12 +40,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [incomeSearchQuery, setIncomeSearchQuery] = useState('');
   const [incomeStatusFilter, setIncomeStatusFilter] = useState<string>('all');
   const [incomeCategoryFilter, setIncomeCategoryFilter] = useState<string>('all');
-  const [incomeSortBy, setIncomeSortBy] = useState<string>('date');
+  const [incomeDateFrom, setIncomeDateFrom] = useState('');
+  const [incomeDateTo, setIncomeDateTo] = useState('');
 
   const [expenseSearchQuery, setExpenseSearchQuery] = useState('');
   const [expenseStatusFilter, setExpenseStatusFilter] = useState<string>('all');
   const [expenseCategoryFilter, setExpenseCategoryFilter] = useState<string>('all');
-  const [expenseSortBy, setExpenseSortBy] = useState<string>('date');
+  const [expenseDateFrom, setExpenseDateFrom] = useState('');
+  const [expenseDateTo, setExpenseDateTo] = useState('');
 
   const [showCancelled, setShowCancelled] = useState(false);
   const [editingIncome, setEditingIncome] = useState<any>(null);
@@ -71,12 +73,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
       // Category filter
       if (incomeCategoryFilter !== 'all' && income.category !== incomeCategoryFilter) return false;
 
+      // Date range filter
+      if (incomeDateFrom && income.date < incomeDateFrom) return false;
+      if (incomeDateTo && income.date > incomeDateTo) return false;
+
       // Show cancelled filter
       if (!showCancelled && income.status === 'Cancelled') return false;
 
       return true;
     });
-  }, [allIncome, incomeSearchQuery, incomeStatusFilter, incomeCategoryFilter, showCancelled]);
+  }, [allIncome, incomeSearchQuery, incomeStatusFilter, incomeCategoryFilter, incomeDateFrom, incomeDateTo, showCancelled]);
 
   // Filter expense transactions
   const filteredExpenses = useMemo(() => {
@@ -96,12 +102,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
       // Category filter
       if (expenseCategoryFilter !== 'all' && expense.category !== expenseCategoryFilter) return false;
 
+      // Date range filter
+      if (expenseDateFrom && expense.date < expenseDateFrom) return false;
+      if (expenseDateTo && expense.date > expenseDateTo) return false;
+
       // Show cancelled filter
       if (!showCancelled && expense.paymentStatus === 'Cancelled') return false;
 
       return true;
     });
-  }, [allExpenses, expenseSearchQuery, expenseStatusFilter, expenseCategoryFilter, showCancelled]);
+  }, [allExpenses, expenseSearchQuery, expenseStatusFilter, expenseCategoryFilter, expenseDateFrom, expenseDateTo, showCancelled]);
 
   // Get unique income categories
   const incomeCategories = useMemo(() => {
@@ -127,6 +137,84 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return Array.from(statuses).sort();
   }, [allExpenses]);
 
+  // Calculate monthly overview
+  const monthlyOverview = useMemo(() => {
+    const overview: Record<string, { income: number; expenses: number; net: number; count: number }> = {};
+
+    // Group income by month
+    allIncome.forEach(income => {
+      if (income.status === 'Received' || income.status === 'Partial') {
+        const monthKey = income.date.substring(0, 7); // YYYY-MM
+        if (!overview[monthKey]) {
+          overview[monthKey] = { income: 0, expenses: 0, net: 0, count: 0 };
+        }
+        overview[monthKey].income += income.convertedAmount || 0;
+        overview[monthKey].count += 1;
+      }
+    });
+
+    // Group expenses by month
+    allExpenses.forEach(expense => {
+      if (expense.paymentStatus === 'Done') {
+        const monthKey = expense.date.substring(0, 7); // YYYY-MM
+        if (!overview[monthKey]) {
+          overview[monthKey] = { income: 0, expenses: 0, net: 0, count: 0 };
+        }
+        overview[monthKey].expenses += expense.convertedAmount || 0;
+        overview[monthKey].count += 1;
+      }
+    });
+
+    // Calculate net for each month
+    Object.keys(overview).forEach(month => {
+      overview[month].net = overview[month].income - overview[month].expenses;
+    });
+
+    return overview;
+  }, [allIncome, allExpenses]);
+
+  const formatMonthName = (monthKey: string) => {
+    const [year, month] = monthKey.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  // Export to Excel
+  const handleExport = () => {
+    const incomeData = filteredIncome.map(t => ({
+      Date: t.date,
+      Type: 'Income',
+      Description: t.description,
+      Category: t.category,
+      'Client Name': t.clientName || '',
+      Amount: t.receivedAmount,
+      Currency: t.currency,
+      'Converted Amount (PKR)': t.convertedAmount,
+      Status: t.status,
+      Account: t.account,
+      Notes: t.notes || '',
+    }));
+
+    const expenseData = filteredExpenses.map(t => ({
+      Date: t.date,
+      Type: 'Expense',
+      Description: t.description,
+      Category: t.category,
+      Amount: t.amount,
+      Currency: t.currency,
+      'Converted Amount (PKR)': t.convertedAmount,
+      Status: t.paymentStatus,
+      Account: t.account,
+      Notes: t.notes || '',
+    }));
+
+    const allData = [...incomeData, ...expenseData].sort((a, b) => b.Date.localeCompare(a.Date));
+
+    const ws = XLSX.utils.json_to_sheet(allData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+    XLSX.writeFile(wb, `transactions_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
   const handleEditIncome = (income: any) => {
     setEditingIncome(income);
@@ -181,59 +269,83 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Recent Income</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-green-600 font-medium">{filteredIncome.length} transactions</span>
-            {isSuperAdmin && (
-              <button className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                <Trash2 className="w-4 h-4" />
-                Delete All
-              </button>
-            )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+              <Upload className="w-4 h-4" />
+              Import
+            </button>
+            <button
+              onClick={onAddIncome}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Transaction
+            </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <select
-              value={incomeStatusFilter}
-              onChange={(e) => setIncomeStatusFilter(e.target.value)}
-              className="px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              <option value="all">All Status</option>
-              {incomeStatuses.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-6">
+          {/* Search */}
+          <div className="relative md:col-span-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, category..."
+              value={incomeSearchQuery}
+              onChange={(e) => setIncomeSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
           </div>
 
-          <button
-            onClick={() => setShowCancelled(!showCancelled)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              showCancelled
-                ? 'bg-gray-200 text-gray-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-150'
-            }`}
+          {/* Status Filter */}
+          <select
+            value={incomeStatusFilter}
+            onChange={(e) => setIncomeStatusFilter(e.target.value)}
+            className="md:col-span-2 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Show Cancelled
-          </button>
+            <option value="all">All Status</option>
+            {incomeStatuses.map(status => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
 
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-sm text-gray-500">Sort by:</span>
-            <select
-              value={incomeSortBy}
-              onChange={(e) => setIncomeSortBy(e.target.value)}
-              className="px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              <option value="date">Date</option>
-              <option value="amount">Amount</option>
-              <option value="status">Status</option>
-            </select>
-          </div>
+          {/* Category Filter */}
+          <select
+            value={incomeCategoryFilter}
+            onChange={(e) => setIncomeCategoryFilter(e.target.value)}
+            className="md:col-span-2 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          >
+            <option value="all">All Categories</option>
+            {incomeCategories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+
+          {/* Date From */}
+          <input
+            type="date"
+            value={incomeDateFrom}
+            onChange={(e) => setIncomeDateFrom(e.target.value)}
+            className="md:col-span-2 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            placeholder="dd/mm/yyyy"
+          />
+
+          {/* Date To */}
+          <input
+            type="date"
+            value={incomeDateTo}
+            onChange={(e) => setIncomeDateTo(e.target.value)}
+            className="md:col-span-2 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            placeholder="dd/mm/yyyy"
+          />
         </div>
 
         {/* Income Table */}
@@ -354,59 +466,83 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Recent Expenses</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-red-600 font-medium">{filteredExpenses.length} transactions</span>
-            {isSuperAdmin && (
-              <button className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                <Trash2 className="w-4 h-4" />
-                Delete All
-              </button>
-            )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+              <Upload className="w-4 h-4" />
+              Import
+            </button>
+            <button
+              onClick={onAddExpense}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Transaction
+            </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <select
-              value={expenseStatusFilter}
-              onChange={(e) => setExpenseStatusFilter(e.target.value)}
-              className="px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              <option value="all">All Status</option>
-              {expenseStatuses.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-6">
+          {/* Search */}
+          <div className="relative md:col-span-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, category..."
+              value={expenseSearchQuery}
+              onChange={(e) => setExpenseSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
           </div>
 
-          <button
-            onClick={() => setShowCancelled(!showCancelled)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              showCancelled
-                ? 'bg-gray-200 text-gray-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-150'
-            }`}
+          {/* Status Filter */}
+          <select
+            value={expenseStatusFilter}
+            onChange={(e) => setExpenseStatusFilter(e.target.value)}
+            className="md:col-span-2 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Show Cancelled
-          </button>
+            <option value="all">All Status</option>
+            {expenseStatuses.map(status => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
 
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-sm text-gray-500">Sort by:</span>
-            <select
-              value={expenseSortBy}
-              onChange={(e) => setExpenseSortBy(e.target.value)}
-              className="px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              <option value="date">Date</option>
-              <option value="amount">Amount</option>
-              <option value="status">Status</option>
-            </select>
-          </div>
+          {/* Category Filter */}
+          <select
+            value={expenseCategoryFilter}
+            onChange={(e) => setExpenseCategoryFilter(e.target.value)}
+            className="md:col-span-2 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          >
+            <option value="all">All Categories</option>
+            {expenseCategories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+
+          {/* Date From */}
+          <input
+            type="date"
+            value={expenseDateFrom}
+            onChange={(e) => setExpenseDateFrom(e.target.value)}
+            className="md:col-span-2 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            placeholder="dd/mm/yyyy"
+          />
+
+          {/* Date To */}
+          <input
+            type="date"
+            value={expenseDateTo}
+            onChange={(e) => setExpenseDateTo(e.target.value)}
+            className="md:col-span-2 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            placeholder="dd/mm/yyyy"
+          />
         </div>
 
         {/* Expenses Table */}
@@ -507,6 +643,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <p className="text-gray-500">No expense transactions found</p>
           </div>
         )}
+      </div>
+
+      {/* Monthly Overview */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Monthly Overview</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Object.entries(monthlyOverview)
+            .sort(([a], [b]) => b.localeCompare(a))
+            .map(([month, stats]) => (
+              <div key={month} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow bg-gray-50">
+                <h3 className="font-semibold text-gray-900 mb-4 text-lg">{formatMonthName(month)}</h3>
+                <div className="space-y-2.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Income:</span>
+                    <span className="text-sm font-semibold text-green-600">{formatCurrency(stats.income)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Expenses:</span>
+                    <span className="text-sm font-semibold text-red-600">{formatCurrency(stats.expenses)}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2.5 border-t border-gray-200">
+                    <span className="text-sm font-medium text-gray-900">Net:</span>
+                    <span className={`text-sm font-bold ${stats.net >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      {formatCurrency(stats.net)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 text-center mt-3 pt-2 border-t border-gray-200">
+                    {stats.count} transaction{stats.count !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+            ))}
+        </div>
       </div>
 
     </div>

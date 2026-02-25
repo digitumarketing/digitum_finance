@@ -272,10 +272,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <Download className="w-4 h-4" />
               Export
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-              <Upload className="w-4 h-4" />
-              Import
-            </button>
             <button
               onClick={onAddIncome}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
@@ -364,7 +360,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <th className="pb-3 pr-4">Description</th>
                   <th className="pb-3 pr-4">Type</th>
                   <th className="pb-3 pr-4">Category</th>
-                  <th className="pb-3 pr-4">Subcategory</th>
                   <th className="pb-3 pr-4">Account</th>
                   <th className="pb-3 pr-4">Original Amount</th>
                   <th className="pb-3 pr-4">PKR Equivalent</th>
@@ -402,7 +397,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </span>
                     </td>
                     <td className="py-4 pr-4 text-sm text-gray-900">{transaction.category}</td>
-                    <td className="py-4 pr-4 text-sm text-gray-600">{transaction.subcategory || '-'}</td>
                     <td className="py-4 pr-4">
                       <div className="flex items-center gap-1.5 text-sm text-gray-600">
                         <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

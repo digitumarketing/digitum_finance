@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { DashboardSummary } from '../components/DashboardSummary';
 import { IncomeForm } from '../components/IncomeForm';
 import { ExpenseForm } from '../components/ExpenseForm';
-import { Download, Upload, Plus, Search, Calendar, Filter, MoreVertical, ChevronDown, Edit2, Trash2 } from 'lucide-react';
+import { Download, Upload, Plus, Search, Calendar, Filter, MoreVertical, ChevronDown, Edit2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '../utils/helpers';
 import * as XLSX from 'xlsx';
 
@@ -47,7 +47,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [showCancelled, setShowCancelled] = useState(false);
   const [editingIncome, setEditingIncome] = useState<any>(null);
   const [editingExpense, setEditingExpense] = useState<any>(null);
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const transactionsPerPage = 15;
 
   // Combine and filter all transactions
   const filteredTransactions = useMemo(() => {
@@ -73,6 +74,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     // Apply filters
     return combined.filter(transaction => {
+      // Month filter - Filter by selected month first
+      if (selectedMonth !== 'all') {
+        const transactionMonth = transaction.date.substring(0, 7); // Get YYYY-MM
+        if (transactionMonth !== selectedMonth) return false;
+      }
+
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -101,7 +108,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       return true;
     }).sort((a, b) => b.date.localeCompare(a.date)); // Sort by date, newest first
-  }, [allIncome, allExpenses, searchQuery, typeFilter, statusFilter, categoryFilter, dateFrom, dateTo, showCancelled]);
+  }, [allIncome, allExpenses, selectedMonth, searchQuery, typeFilter, statusFilter, categoryFilter, dateFrom, dateTo, showCancelled]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
+  const startIndex = (currentPage - 1) * transactionsPerPage;
+  const endIndex = startIndex + transactionsPerPage;
+  const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedMonth, searchQuery, typeFilter, statusFilter, categoryFilter, dateFrom, dateTo, showCancelled]);
 
   // Get unique categories from both income and expenses
   const allCategories = useMemo(() => {
@@ -352,23 +370,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Transactions Table */}
         {filteredTransactions.length > 0 ? (
-          <div className="overflow-x-auto bg-gray-50 rounded-lg p-4">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <th className="pb-3 pr-4">Date</th>
-                  <th className="pb-3 pr-4">Description</th>
-                  <th className="pb-3 pr-4">Type</th>
-                  <th className="pb-3 pr-4">Category</th>
-                  <th className="pb-3 pr-4">Account</th>
-                  <th className="pb-3 pr-4">Original Amount</th>
-                  <th className="pb-3 pr-4">PKR Equivalent</th>
-                  <th className="pb-3 pr-4">Status</th>
-                  <th className="pb-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredTransactions.map((transaction) => (
+          <>
+            <div className="overflow-x-auto bg-gray-50 rounded-lg p-4">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="pb-3 pr-4">Date</th>
+                    <th className="pb-3 pr-4">Description</th>
+                    <th className="pb-3 pr-4">Type</th>
+                    <th className="pb-3 pr-4">Category</th>
+                    <th className="pb-3 pr-4">Account</th>
+                    <th className="pb-3 pr-4">Original Amount</th>
+                    <th className="pb-3 pr-4">PKR Equivalent</th>
+                    <th className="pb-3 pr-4">Status</th>
+                    <th className="pb-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {paginatedTransactions.map((transaction) => (
                   <tr key={`${transaction.type}-${transaction.id}`} className="hover:bg-white transition-colors">
                     <td className="py-4 pr-4 text-sm text-gray-900 whitespace-nowrap">
                       {new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -466,6 +485,76 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-white rounded-b-lg">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} transactions
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    currentPage === 1
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                            currentPage === page
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return <span key={page} className="px-2 text-gray-400">...</span>;
+                    }
+                    return null;
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    currentPage === totalPages
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
         ) : (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <p className="text-gray-500">No transactions found</p>

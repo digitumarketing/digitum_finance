@@ -998,6 +998,147 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
         </div>
       </div>
+
+      <QuarterlyBreakdown allIncome={allIncome} allExpenses={allExpenses} />
+    </div>
+  );
+};
+
+const QuarterlyBreakdown: React.FC<{ allIncome: Income[], allExpenses: Expense[] }> = ({ allIncome, allExpenses }) => {
+  const currentYear = new Date().getFullYear();
+
+  const monthlyData = useMemo(() => {
+    const data: Record<number, { income: number; expense: number; net: number }> = {};
+
+    // Initialize all 12 months
+    for (let i = 1; i <= 12; i++) {
+      data[i] = { income: 0, expense: 0, net: 0 };
+    }
+
+    // Calculate income for each month
+    allIncome.forEach(income => {
+      if (income.status === 'Received' || income.status === 'Partial') {
+        const date = new Date(income.date);
+        if (date.getFullYear() === currentYear) {
+          const month = date.getMonth() + 1;
+          data[month].income += income.convertedAmount || 0;
+        }
+      }
+    });
+
+    // Calculate expenses for each month
+    allExpenses.forEach(expense => {
+      if (expense.paymentStatus === 'Done') {
+        const date = new Date(expense.date);
+        if (date.getFullYear() === currentYear) {
+          const month = date.getMonth() + 1;
+          data[month].expense += expense.convertedAmount || 0;
+        }
+      }
+    });
+
+    // Calculate net for each month
+    Object.keys(data).forEach(month => {
+      const monthNum = parseInt(month);
+      data[monthNum].net = data[monthNum].income - data[monthNum].expense;
+    });
+
+    return data;
+  }, [allIncome, allExpenses, currentYear]);
+
+  const quarterlyData = useMemo(() => {
+    const quarters = [
+      { name: 'Q1', months: [1, 2, 3], color: 'from-blue-500 to-blue-600' },
+      { name: 'Q2', months: [4, 5, 6], color: 'from-purple-500 to-purple-600' },
+      { name: 'Q3', months: [7, 8, 9], color: 'from-indigo-500 to-indigo-600' },
+      { name: 'Q4', months: [10, 11, 12], color: 'from-violet-500 to-violet-600' }
+    ];
+
+    return quarters.map(quarter => {
+      const income = quarter.months.reduce((sum, month) => sum + monthlyData[month].income, 0);
+      const expense = quarter.months.reduce((sum, month) => sum + monthlyData[month].expense, 0);
+      const net = income - expense;
+
+      return { ...quarter, income, expense, net };
+    });
+  }, [monthlyData]);
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="flex items-center space-x-3 mb-6">
+        <div className="p-2 bg-blue-50 rounded-lg">
+          <BarChart3 className="w-5 h-5 text-blue-600" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-900">Quarterly Breakdown</h3>
+      </div>
+
+      <div className="space-y-8">
+        {quarterlyData.map((quarter, qIndex) => (
+          <div key={quarter.name}>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              {/* Month Cards */}
+              {quarter.months.map(monthNum => (
+                <div key={monthNum} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-gray-900">{monthNames[monthNum - 1]}</h4>
+                    <BarChart3 className="w-4 h-4 text-gray-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">Income</span>
+                      <span className="text-sm font-semibold text-green-600">
+                        {formatCurrency(monthlyData[monthNum].income)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">Expense</span>
+                      <span className="text-sm font-semibold text-red-600">
+                        {formatCurrency(monthlyData[monthNum].expense)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                      <span className="text-xs font-medium text-gray-700">Net</span>
+                      <span className={`text-sm font-bold ${monthlyData[monthNum].net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {monthlyData[monthNum].net >= 0 ? '+' : ''}{formatCurrency(monthlyData[monthNum].net)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Quarter Summary Card */}
+              <div className={`bg-gradient-to-br ${quarter.color} rounded-lg p-5 text-white`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-bold text-lg">{quarter.name} Summary</h4>
+                  <BarChart3 className="w-5 h-5 text-white opacity-80" />
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-white opacity-90">Total Income</span>
+                    <span className="text-base font-bold">
+                      {formatCurrency(quarter.income)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-white opacity-90">Total Expense</span>
+                    <span className="text-base font-bold">
+                      {formatCurrency(quarter.expense)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-white border-opacity-30">
+                    <span className="text-sm font-medium text-white">Net Balance</span>
+                    <span className="text-base font-bold">
+                      {quarter.net >= 0 ? '+' : ''}{formatCurrency(quarter.net)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

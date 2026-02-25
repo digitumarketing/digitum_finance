@@ -1341,8 +1341,12 @@ export const useSupabaseData = () => {
   }, [user, loadAccounts]);
 
   // Filter data by selected month
-  const monthlyIncome = income.filter(item => item.date.startsWith(selectedMonth));
-  const monthlyExpenses = expenses.filter(item => item.date.startsWith(selectedMonth));
+  const monthlyIncome = selectedMonth === 'all'
+    ? income
+    : income.filter(item => item.date.startsWith(selectedMonth));
+  const monthlyExpenses = selectedMonth === 'all'
+    ? expenses
+    : expenses.filter(item => item.date.startsWith(selectedMonth));
 
   // Calculate dashboard summary
   const dashboardSummary = {

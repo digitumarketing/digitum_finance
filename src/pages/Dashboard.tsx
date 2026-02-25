@@ -143,8 +143,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const monthlyOverview = useMemo(() => {
     const overview: Record<string, { income: number; expenses: number; net: number; count: number }> = {};
 
+    // Filter income by selected month
+    const filteredIncome = selectedMonth === 'all'
+      ? allIncome
+      : allIncome.filter(income => income.date.substring(0, 7) === selectedMonth);
+
+    // Filter expenses by selected month
+    const filteredExpenses = selectedMonth === 'all'
+      ? allExpenses
+      : allExpenses.filter(expense => expense.date.substring(0, 7) === selectedMonth);
+
     // Group income by month
-    allIncome.forEach(income => {
+    filteredIncome.forEach(income => {
       if (income.status === 'Received' || income.status === 'Partial') {
         const monthKey = income.date.substring(0, 7); // YYYY-MM
         if (!overview[monthKey]) {
@@ -156,7 +166,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     });
 
     // Group expenses by month
-    allExpenses.forEach(expense => {
+    filteredExpenses.forEach(expense => {
       if (expense.paymentStatus === 'Done') {
         const monthKey = expense.date.substring(0, 7); // YYYY-MM
         if (!overview[monthKey]) {
@@ -173,7 +183,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     });
 
     return overview;
-  }, [allIncome, allExpenses]);
+  }, [allIncome, allExpenses, selectedMonth]);
 
   const formatMonthName = (monthKey: string) => {
     const [year, month] = monthKey.split('-');

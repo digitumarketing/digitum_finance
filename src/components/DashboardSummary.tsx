@@ -1,7 +1,7 @@
 import React from 'react';
 import { DashboardSummary as DashboardSummaryType } from '../types';
 import { formatCurrency, getMonthName } from '../utils/helpers';
-import { TrendingUp, TrendingDown, Wallet, AlertCircle, Building2, Users, PieChart, Calculator, Clock, CheckCircle, DollarSign, XCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, AlertCircle, Building2, PieChart, Calculator, Clock, CheckCircle, DollarSign, XCircle } from 'lucide-react';
 import { useProfitDistribution } from '../hooks/useProfitDistribution';
 
 interface DashboardSummaryProps {
@@ -359,46 +359,6 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
         </div>
       </div>
 
-      {/* Owner Distribution Summary */}
-      <div className="bg-gradient-to-r from-purple-50 to-orange-50 rounded-xl shadow-sm border border-gray-100 p-4 lg:p-6">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="p-3 bg-white rounded-lg shadow-sm">
-            <Users className="w-6 h-6 text-gray-700" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Owner Distribution Summary</h3>
-            <p className="text-sm text-gray-600">Individual partner earnings this month (all currencies converted to PKR)</p>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <p className="text-sm text-gray-600">Roshaan's Earnings</p>
-                <p className="text-2xl font-bold text-purple-600">{formatCurrency(currentMonth.roshaanShare)}</p>
-              </div>
-              <div className="text-left sm:text-right">
-                <p className="text-sm text-gray-500">{profitDistribution.roshaanPercentage}% of total income</p>
-                <p className="text-xs text-gray-400">Auto-calculated</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <p className="text-sm text-gray-600">Shahbaz's Earnings</p>
-                <p className="text-2xl font-bold text-orange-600">{formatCurrency(currentMonth.shahbazShare)}</p>
-              </div>
-              <div className="text-left sm:text-right">
-                <p className="text-sm text-gray-500">{profitDistribution.roshaanPercentage}% of total income</p>
-                <p className="text-xs text-gray-400">Auto-calculated</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

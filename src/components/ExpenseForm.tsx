@@ -31,13 +31,10 @@ const expenseCategories: ExpenseCategory[] = [
   'Food',
   'Tools',
   'Donation',
-  'Bank Fees',
+  'Bank',
   'Marketing',
   'Travel',
-  'Gadgets',
-  'Rents and Utility Bills',
-  'Courses / Learning',
-  'Link Building',
+  'Utilities',
   'Other'
 ];
 

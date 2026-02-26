@@ -2,19 +2,16 @@
 
 export type Currency = string; // Changed to string to allow dynamic currencies
 
-export type ExpenseCategory =
+export type ExpenseCategory = 
   | 'Salary'
   | 'Office'
   | 'Food'
   | 'Tools'
   | 'Donation'
-  | 'Bank Fees'
+  | 'Bank'
   | 'Marketing'
   | 'Travel'
-  | 'Gadgets'
-  | 'Rents and Utility Bills'
-  | 'Courses / Learning'
-  | 'Link Building'
+  | 'Utilities'
   | 'Other';
 
 export type IncomeCategory = 

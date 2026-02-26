@@ -1139,6 +1139,80 @@ const QuarterlyBreakdown: React.FC<{ allIncome: Income[], allExpenses: Expense[]
           </div>
         ))}
       </div>
+
+      {/* Annual Summary */}
+      <div className="mt-8 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-8 text-white">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-3 bg-white bg-opacity-10 rounded-lg">
+            <Calendar className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-bold">{currentYear} Annual Report</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Total Annual Income */}
+          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-6 border border-white border-opacity-20">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="p-2 bg-green-500 bg-opacity-20 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-green-300" />
+              </div>
+              <span className="text-sm text-white opacity-90">Total Income</span>
+            </div>
+            <p className="text-3xl font-bold text-green-300">
+              {formatCurrency(quarterlyData.reduce((sum, q) => sum + q.income, 0))}
+            </p>
+          </div>
+
+          {/* Total Annual Expenses */}
+          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-6 border border-white border-opacity-20">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="p-2 bg-red-500 bg-opacity-20 rounded-lg">
+                <TrendingDown className="w-5 h-5 text-red-300" />
+              </div>
+              <span className="text-sm text-white opacity-90">Total Expenses</span>
+            </div>
+            <p className="text-3xl font-bold text-red-300">
+              {formatCurrency(quarterlyData.reduce((sum, q) => sum + q.expense, 0))}
+            </p>
+          </div>
+
+          {/* Annual Net Balance */}
+          <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-6 border border-white border-opacity-20">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="p-2 bg-blue-500 bg-opacity-20 rounded-lg">
+                <BarChart3 className="w-5 h-5 text-blue-300" />
+              </div>
+              <span className="text-sm text-white opacity-90">Net Balance</span>
+            </div>
+            <p className={`text-3xl font-bold ${
+              quarterlyData.reduce((sum, q) => sum + q.net, 0) >= 0 ? 'text-blue-300' : 'text-orange-300'
+            }`}>
+              {quarterlyData.reduce((sum, q) => sum + q.net, 0) >= 0 ? '+' : ''}
+              {formatCurrency(quarterlyData.reduce((sum, q) => sum + q.net, 0))}
+            </p>
+          </div>
+        </div>
+
+        {/* Additional Annual Stats */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white bg-opacity-5 rounded-lg p-4 border border-white border-opacity-10">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-white opacity-80">Average Monthly Income</span>
+              <span className="font-bold text-white">
+                {formatCurrency(quarterlyData.reduce((sum, q) => sum + q.income, 0) / 12)}
+              </span>
+            </div>
+          </div>
+          <div className="bg-white bg-opacity-5 rounded-lg p-4 border border-white border-opacity-10">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-white opacity-80">Average Monthly Expenses</span>
+              <span className="font-bold text-white">
+                {formatCurrency(quarterlyData.reduce((sum, q) => sum + q.expense, 0) / 12)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

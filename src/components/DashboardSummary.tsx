@@ -15,22 +15,13 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
 
   const cards = [
     {
-      title: 'Total Income (PKR)',
-      value: formatCurrency(currentMonth.totalIncome),
-      icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      change: 'Confirmed payments',
-      changeColor: 'text-green-600'
-    },
-    {
-      title: 'Expected Income',
-      value: formatCurrency(currentMonth.expectedIncome),
-      icon: Clock,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      change: 'Upcoming payments',
-      changeColor: 'text-blue-600'
+      title: 'Net Balance',
+      value: formatCurrency(currentMonth.netBalance),
+      icon: Calculator,
+      color: currentMonth.netBalance >= 0 ? 'text-green-600' : 'text-red-600',
+      bgColor: currentMonth.netBalance >= 0 ? 'bg-green-50' : 'bg-red-50',
+      change: 'Income - Expenses',
+      changeColor: currentMonth.netBalance >= 0 ? 'text-green-600' : 'text-red-600'
     },
     {
       title: 'Total Expenses',
@@ -42,13 +33,22 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summary, sel
       changeColor: 'text-red-600'
     },
     {
-      title: 'Net Balance',
-      value: formatCurrency(currentMonth.netBalance),
-      icon: Calculator,
-      color: currentMonth.netBalance >= 0 ? 'text-green-600' : 'text-red-600',
-      bgColor: currentMonth.netBalance >= 0 ? 'bg-green-50' : 'bg-red-50',
-      change: 'Income - Expenses',
-      changeColor: currentMonth.netBalance >= 0 ? 'text-green-600' : 'text-red-600'
+      title: 'Expected Income',
+      value: formatCurrency(currentMonth.expectedIncome),
+      icon: Clock,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      change: 'Upcoming payments',
+      changeColor: 'text-blue-600'
+    },
+    {
+      title: 'Total Income (PKR)',
+      value: formatCurrency(currentMonth.totalIncome),
+      icon: TrendingUp,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      change: 'Confirmed payments',
+      changeColor: 'text-green-600'
     }
   ];
 

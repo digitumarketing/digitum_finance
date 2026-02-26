@@ -15,7 +15,6 @@ interface IncomeFormData {
   status: IncomeStatus;
   account: AccountName;
   dueDate?: string; // New field for due date
-  accountingMonth: string; // YYYY-MM format - which month to count this income toward
   manualConversionRate?: number;
   manualPKRAmount?: number;
 }
@@ -44,11 +43,8 @@ const incomeCategories: IncomeCategory[] = [
 const statusOptions: IncomeStatus[] = ['Received', 'Upcoming', 'Partial', 'Cancelled'];
 
 export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exchangeRates, accounts: propAccounts, editData }) => {
-  const currentDate = editData?.date || new Date().toISOString().split('T')[0];
-  const defaultAccountingMonth = editData?.accountingMonth || currentDate.substring(0, 7); // YYYY-MM
-
   const [formData, setFormData] = useState<IncomeFormData>({
-    date: currentDate,
+    date: editData?.date || new Date().toISOString().split('T')[0],
     originalAmount: editData?.originalAmount || 0,
     currency: editData?.currency || 'PKR',
     receivedAmount: editData?.receivedAmount || 0,
@@ -59,7 +55,6 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
     status: editData?.status || 'Upcoming',
     account: editData?.account || 'Bank Alfalah',
     dueDate: editData?.dueDate || '',
-    accountingMonth: defaultAccountingMonth,
     manualConversionRate: editData?.manualConversionRate || undefined,
     manualPKRAmount: editData?.manualPKRAmount || undefined,
   });
@@ -108,14 +103,6 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
       setFormData(prev => ({ ...prev, receivedAmount: 0 }));
     }
   }, [formData.status, formData.originalAmount]);
-
-  // Auto-update accounting month when date changes
-  useEffect(() => {
-    const newAccountingMonth = formData.date.substring(0, 7); // YYYY-MM
-    if (newAccountingMonth !== formData.accountingMonth) {
-      setFormData(prev => ({ ...prev, accountingMonth: newAccountingMonth }));
-    }
-  }, [formData.date]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -339,26 +326,6 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
               {errors.dueDate && <p className="text-red-500 text-xs mt-1">{errors.dueDate}</p>}
               <p className="text-xs text-blue-600 mt-1">
                 This date will be used for payment reminders and notifications
-              </p>
-            </div>
-          )}
-
-          {/* Accounting Month (for received/partial payments) */}
-          {(formData.status === 'Received' || formData.status === 'Partial') && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <label className="flex items-center space-x-2 text-sm font-medium text-green-900 mb-2">
-                <Calendar className="w-4 h-4" />
-                <span>Count This Income Toward Which Month?</span>
-              </label>
-              <input
-                type="month"
-                value={formData.accountingMonth}
-                onChange={(e) => handleChange('accountingMonth', e.target.value)}
-                className="w-full border border-green-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-              />
-              <p className="text-xs text-green-700 mt-2">
-                <strong>Example:</strong> If you worked in January but received payment in February,
-                you can select January here so this income counts toward January's financial tracking.
               </p>
             </div>
           )}

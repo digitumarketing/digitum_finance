@@ -2,19 +2,16 @@
 
 export type Currency = string; // Changed to string to allow dynamic currencies
 
-export type ExpenseCategory =
+export type ExpenseCategory = 
   | 'Salary'
   | 'Office'
   | 'Food'
   | 'Tools'
   | 'Donation'
-  | 'Bank Fees'
+  | 'Bank'
   | 'Marketing'
   | 'Travel'
-  | 'Gadgets'
-  | 'Rent and Utility Bills'
-  | 'Link Building'
-  | 'Course / Learning'
+  | 'Utilities'
   | 'Other';
 
 export type IncomeCategory = 
@@ -63,9 +60,6 @@ export interface Income {
 
   // Due date for upcoming payments
   dueDate?: string; // Expected payment date for upcoming income
-
-  // Accounting period tracking
-  accountingMonth: string; // YYYY-MM format - which month this income should count toward
 
   // Manual conversion tracking
   manualConversionRate?: number; // User-entered conversion rate

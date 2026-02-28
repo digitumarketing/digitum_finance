@@ -64,6 +64,9 @@ export interface Income {
   // Due date for upcoming payments
   dueDate?: string; // Expected payment date for upcoming income
 
+  // Accounting month for income tracking
+  accountingMonth?: string; // Month to record income (YYYY-MM format)
+
   // Manual conversion tracking
   manualConversionRate?: number; // User-entered conversion rate
   manualPKRAmount?: number; // User-entered PKR amount (override)

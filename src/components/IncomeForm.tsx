@@ -14,7 +14,8 @@ interface IncomeFormData {
   notes: string;
   status: IncomeStatus;
   account: AccountName;
-  dueDate?: string; // New field for due date
+  dueDate?: string;
+  accountingMonth?: string;
   manualConversionRate?: number;
   manualPKRAmount?: number;
 }
@@ -55,6 +56,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
     status: editData?.status || 'Upcoming',
     account: editData?.account || 'Bank Alfalah',
     dueDate: editData?.dueDate || '',
+    accountingMonth: editData?.accountingMonth || new Date().toISOString().slice(0, 7),
     manualConversionRate: editData?.manualConversionRate || undefined,
     manualPKRAmount: editData?.manualPKRAmount || undefined,
   });
@@ -330,6 +332,28 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
             </div>
           )}
 
+          {/* Accounting Month (for received/partial payments) */}
+          {(formData.status === 'Received' || formData.status === 'Partial') && (
+            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+              <label className="flex items-center space-x-2 text-sm font-medium text-green-900 mb-2">
+                <Calendar className="w-4 h-4" />
+                <span>Record Income in Month</span>
+              </label>
+              <input
+                type="month"
+                value={formData.accountingMonth || ''}
+                onChange={(e) => handleChange('accountingMonth', e.target.value)}
+                className="w-full border border-green-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors bg-white"
+              />
+              <p className="text-xs text-green-700 mt-2 flex items-start space-x-1">
+                <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                <span>
+                  Select which month this income should be recorded in. This is useful when you receive payment for work done in a previous month, or when you want to track income by the period it belongs to rather than when it was received.
+                </span>
+              </p>
+            </div>
+          )}
+
           {/* Original Amount */}
           <div>
             <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
@@ -532,7 +556,16 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
                     <span className="text-sm">Account:</span>
                     <span className="font-semibold">{formData.account}</span>
                   </div>
-                  
+
+                  {(formData.status === 'Received' || formData.status === 'Partial') && formData.accountingMonth && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Recording Month:</span>
+                      <span className="font-semibold text-green-600">
+                        {new Date(formData.accountingMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </span>
+                    </div>
+                  )}
+
                   {formData.status === 'Upcoming' && formData.dueDate && (
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Due Date:</span>

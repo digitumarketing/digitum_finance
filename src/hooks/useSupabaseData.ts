@@ -402,9 +402,9 @@ export const useSupabaseData = () => {
         .from('notification_settings')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // Not found error
+      if (error) {
         console.error('Error loading notification settings:', error);
         return;
       }
@@ -461,9 +461,10 @@ export const useSupabaseData = () => {
         splitAmountPKR = receivedPKRAmount;
       }
 
-      // Use JSON-based RPC to bypass PostgREST schema cache
-      const { data, error } = await supabase.rpc('insert_income_json', {
-        income_data: {
+      // Direct insert to income table
+      const { data, error } = await supabase
+        .from('income')
+        .insert({
           user_id: user.id,
           date: incomeData.date,
           original_amount: incomeData.originalAmount,
@@ -483,8 +484,9 @@ export const useSupabaseData = () => {
           manual_pkr_amount: incomeData.manualPKRAmount || null,
           split_amount_pkr: splitAmountPKR,
           split_rate_used: effectiveRate
-        }
-      });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Error adding income:', error);

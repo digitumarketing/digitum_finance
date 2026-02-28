@@ -65,7 +65,7 @@ export interface Income {
   dueDate?: string; // Expected payment date for upcoming income
 
   // Accounting month for income tracking
-  accountingMonth?: string; // Month to record income (YYYY-MM format)
+  accountingMonth?: string; // Month to record income (MMMM YYYY format, e.g., 'February 2026')
 
   // Manual conversion tracking
   manualConversionRate?: number; // User-entered conversion rate

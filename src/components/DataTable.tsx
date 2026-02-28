@@ -262,6 +262,11 @@ export const DataTable: React.FC<DataTableProps> = ({ data, type, onEdit, onDele
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
                       {formatDate(item.date)}
+                      {type === 'income' && isIncome(item) && item.accountingMonth && (
+                        <span className="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded">
+                          {item.accountingMonth}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 ml-2">
@@ -343,6 +348,11 @@ export const DataTable: React.FC<DataTableProps> = ({ data, type, onEdit, onDele
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
+                {type === 'income' && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Month
+                  </th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Description
                 </th>
@@ -390,6 +400,14 @@ export const DataTable: React.FC<DataTableProps> = ({ data, type, onEdit, onDele
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatDate(item.date)}
                     </td>
+                    {type === 'income' && isIncome(item) && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="w-3 h-3 text-gray-400" />
+                          <span>{item.accountingMonth || '-'}</span>
+                        </div>
+                      </td>
+                    )}
                     <td className="px-6 py-4 text-sm text-gray-900">
                       <div className={isCancelled ? 'line-through' : ''}>
                         <div className="font-medium">{item.description}</div>

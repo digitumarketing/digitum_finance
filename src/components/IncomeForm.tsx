@@ -17,6 +17,7 @@ interface IncomeFormData {
   dueDate?: string;
   manualConversionRate?: number;
   manualPKRAmount?: number;
+  accountingMonth?: string;
 }
 
 interface IncomeFormProps {
@@ -43,6 +44,15 @@ const incomeCategories: IncomeCategory[] = [
 const statusOptions: IncomeStatus[] = ['Received', 'Upcoming', 'Partial', 'Cancelled'];
 
 export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exchangeRates, accounts: propAccounts, editData }) => {
+  // Helper function to format accounting month as 'MMMM YYYY'
+  const formatAccountingMonth = (date: Date): string => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return `${months[date.getMonth()]} ${date.getFullYear()}`;
+  };
+
   const [formData, setFormData] = useState<IncomeFormData>({
     date: editData?.date || new Date().toISOString().split('T')[0],
     originalAmount: editData?.originalAmount || 0,
@@ -57,6 +67,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
     dueDate: editData?.dueDate || '',
     manualConversionRate: editData?.manualConversionRate || undefined,
     manualPKRAmount: editData?.manualPKRAmount || undefined,
+    accountingMonth: editData?.accountingMonth || formatAccountingMonth(new Date()),
   });
 
   const [useManualRate, setUseManualRate] = useState(!!editData?.manualConversionRate);
@@ -222,8 +233,8 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
 
       <form onSubmit={handleSubmit} className="p-6">
         <div className="space-y-6">
-          {/* Date and Client Name */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Date, Month, and Client Name */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
                 <Calendar className="w-4 h-4" />
@@ -239,6 +250,33 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
                 required
               />
               {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
+            </div>
+
+            <div>
+              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="w-4 h-4" />
+                <span>Accounting Month</span>
+              </label>
+              <input
+                type="month"
+                value={formData.accountingMonth ?
+                  (() => {
+                    const [month, year] = formData.accountingMonth.split(' ');
+                    const monthNum = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].indexOf(month) + 1;
+                    return `${year}-${String(monthNum).padStart(2, '0')}`;
+                  })()
+                  : ''
+                }
+                onChange={(e) => {
+                  const [year, month] = e.target.value.split('-');
+                  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                  handleChange('accountingMonth', `${monthNames[parseInt(month) - 1]} ${year}`);
+                }}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Period for accounting records
+              </p>
             </div>
 
             <div>

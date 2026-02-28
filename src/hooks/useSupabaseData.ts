@@ -461,50 +461,35 @@ export const useSupabaseData = () => {
         splitAmountPKR = receivedPKRAmount;
       }
 
-      const insertData: any = {
-        user_id: user.id,
-        date: incomeData.date,
-        original_amount: incomeData.originalAmount,
-        currency: accountCurrency,
-        received_amount: incomeData.receivedAmount || 0,
-        converted_amount: convertedAmount,
-        original_converted_amount: originalConvertedAmount,
-        category: incomeData.category,
-        description: incomeData.description,
-        client_name: incomeData.clientName,
-        notes: incomeData.notes || '',
-        status: incomeData.status,
-        account_name: incomeData.account,
-        split_amount_pkr: splitAmountPKR,
-        split_rate_used: effectiveRate,
-      };
-
-      if (incomeData.dueDate) {
-        insertData.due_date = incomeData.dueDate;
-      }
-
-      if (incomeData.accountingMonth) {
-        insertData.accounting_month = incomeData.accountingMonth;
-      }
-
-      if (incomeData.manualConversionRate) {
-        insertData.manual_conversion_rate = incomeData.manualConversionRate;
-      }
-
-      if (incomeData.manualPKRAmount) {
-        insertData.manual_pkr_amount = incomeData.manualPKRAmount;
-      }
-
-      const { data, error } = await supabase
-        .from('income')
-        .insert(insertData)
-        .select()
-        .single();
+      // Use direct SQL to bypass REST API cache issues
+      const { data: rpcData, error } = await supabase.rpc('insert_income', {
+        p_user_id: user.id,
+        p_date: incomeData.date,
+        p_original_amount: incomeData.originalAmount,
+        p_currency: accountCurrency,
+        p_received_amount: incomeData.receivedAmount || 0,
+        p_converted_amount: convertedAmount,
+        p_original_converted_amount: originalConvertedAmount,
+        p_category: incomeData.category,
+        p_description: incomeData.description,
+        p_client_name: incomeData.clientName,
+        p_notes: incomeData.notes || '',
+        p_status: incomeData.status,
+        p_account_name: incomeData.account,
+        p_due_date: incomeData.dueDate || null,
+        p_accounting_month: incomeData.accountingMonth || null,
+        p_manual_conversion_rate: incomeData.manualConversionRate || null,
+        p_manual_pkr_amount: incomeData.manualPKRAmount || null,
+        p_split_amount_pkr: splitAmountPKR,
+        p_split_rate_used: effectiveRate
+      });
 
       if (error) {
         console.error('Error adding income:', error);
         throw error;
       }
+
+      const data = Array.isArray(rpcData) && rpcData.length > 0 ? rpcData[0] : rpcData;
 
       console.log('Income added successfully:', data);
       

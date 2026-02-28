@@ -461,35 +461,35 @@ export const useSupabaseData = () => {
         splitAmountPKR = receivedPKRAmount;
       }
 
-      // Use direct SQL to bypass REST API cache issues
-      const { data: rpcData, error } = await supabase.rpc('insert_income', {
-        p_user_id: user.id,
-        p_date: incomeData.date,
-        p_original_amount: incomeData.originalAmount,
-        p_currency: accountCurrency,
-        p_received_amount: incomeData.receivedAmount || 0,
-        p_converted_amount: convertedAmount,
-        p_original_converted_amount: originalConvertedAmount,
-        p_category: incomeData.category,
-        p_description: incomeData.description,
-        p_client_name: incomeData.clientName,
-        p_notes: incomeData.notes || '',
-        p_status: incomeData.status,
-        p_account_name: incomeData.account,
-        p_due_date: incomeData.dueDate || null,
-        p_accounting_month: incomeData.accountingMonth || null,
-        p_manual_conversion_rate: incomeData.manualConversionRate || null,
-        p_manual_pkr_amount: incomeData.manualPKRAmount || null,
-        p_split_amount_pkr: splitAmountPKR,
-        p_split_rate_used: effectiveRate
+      // Use JSON-based RPC to bypass PostgREST schema cache
+      const { data, error } = await supabase.rpc('insert_income_json', {
+        income_data: {
+          user_id: user.id,
+          date: incomeData.date,
+          original_amount: incomeData.originalAmount,
+          currency: accountCurrency,
+          received_amount: incomeData.receivedAmount || 0,
+          converted_amount: convertedAmount,
+          original_converted_amount: originalConvertedAmount,
+          category: incomeData.category,
+          description: incomeData.description,
+          client_name: incomeData.clientName,
+          notes: incomeData.notes || '',
+          status: incomeData.status,
+          account_name: incomeData.account,
+          due_date: incomeData.dueDate || null,
+          accounting_month: incomeData.accountingMonth || null,
+          manual_conversion_rate: incomeData.manualConversionRate || null,
+          manual_pkr_amount: incomeData.manualPKRAmount || null,
+          split_amount_pkr: splitAmountPKR,
+          split_rate_used: effectiveRate
+        }
       });
 
       if (error) {
         console.error('Error adding income:', error);
         throw error;
       }
-
-      const data = Array.isArray(rpcData) && rpcData.length > 0 ? rpcData[0] : rpcData;
 
       console.log('Income added successfully:', data);
       

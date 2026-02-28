@@ -461,29 +461,43 @@ export const useSupabaseData = () => {
         splitAmountPKR = receivedPKRAmount;
       }
 
+      const insertData: any = {
+        user_id: user.id,
+        date: incomeData.date,
+        original_amount: incomeData.originalAmount,
+        currency: accountCurrency,
+        received_amount: incomeData.receivedAmount || 0,
+        converted_amount: convertedAmount,
+        original_converted_amount: originalConvertedAmount,
+        category: incomeData.category,
+        description: incomeData.description,
+        client_name: incomeData.clientName,
+        notes: incomeData.notes || '',
+        status: incomeData.status,
+        account_name: incomeData.account,
+        split_amount_pkr: splitAmountPKR,
+        split_rate_used: effectiveRate,
+      };
+
+      if (incomeData.dueDate) {
+        insertData.due_date = incomeData.dueDate;
+      }
+
+      if (incomeData.accountingMonth) {
+        insertData.accounting_month = incomeData.accountingMonth;
+      }
+
+      if (incomeData.manualConversionRate) {
+        insertData.manual_conversion_rate = incomeData.manualConversionRate;
+      }
+
+      if (incomeData.manualPKRAmount) {
+        insertData.manual_pkr_amount = incomeData.manualPKRAmount;
+      }
+
       const { data, error } = await supabase
         .from('income')
-        .insert({
-          user_id: user.id,
-          date: incomeData.date,
-          original_amount: incomeData.originalAmount,
-          currency: accountCurrency,
-          received_amount: incomeData.receivedAmount || 0,
-          converted_amount: convertedAmount,
-          original_converted_amount: originalConvertedAmount,
-          category: incomeData.category,
-          description: incomeData.description,
-          client_name: incomeData.clientName,
-          notes: incomeData.notes || '',
-          status: incomeData.status,
-          account_name: incomeData.account,
-          due_date: incomeData.dueDate || null,
-          accounting_month: incomeData.accountingMonth || null,
-          manual_conversion_rate: incomeData.manualConversionRate || null,
-          manual_pkr_amount: incomeData.manualPKRAmount || null,
-          split_amount_pkr: splitAmountPKR,
-          split_rate_used: effectiveRate,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -558,13 +572,26 @@ export const useSupabaseData = () => {
         notes: updates.notes || '',
         status: updates.status,
         account_name: updates.account,
-        due_date: updates.dueDate || null,
-        accounting_month: updates.accountingMonth || null,
-        manual_conversion_rate: updates.manualConversionRate || null,
-        manual_pkr_amount: updates.manualPKRAmount || null,
         split_amount_pkr: splitAmountPKR,
         split_rate_used: effectiveRate,
       };
+
+      // Add optional fields only if they have values
+      if (updates.dueDate !== undefined) {
+        dbUpdates.due_date = updates.dueDate;
+      }
+
+      if (updates.accountingMonth !== undefined) {
+        dbUpdates.accounting_month = updates.accountingMonth;
+      }
+
+      if (updates.manualConversionRate !== undefined) {
+        dbUpdates.manual_conversion_rate = updates.manualConversionRate;
+      }
+
+      if (updates.manualPKRAmount !== undefined) {
+        dbUpdates.manual_pkr_amount = updates.manualPKRAmount;
+      }
 
       // Remove undefined values
       Object.keys(dbUpdates).forEach(key => {

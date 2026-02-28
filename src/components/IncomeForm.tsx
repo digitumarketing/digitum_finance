@@ -75,6 +75,34 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [accounts, setAccounts] = useState<{name: string, currency: string}[]>([]);
 
+  // Sync date with accounting month: keep current day, use selected month/year
+  useEffect(() => {
+    if (!formData.accountingMonth) return;
+
+    // Parse the accounting month (format: "January 2026")
+    const [monthName, yearStr] = formData.accountingMonth.split(' ');
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthIndex = monthNames.indexOf(monthName);
+    const year = parseInt(yearStr);
+
+    if (monthIndex === -1 || isNaN(year)) return;
+
+    // Get the current day from the existing date or today
+    const currentDate = formData.date ? new Date(formData.date) : new Date();
+    const dayOfMonth = currentDate.getDate();
+
+    // Create new date with selected month/year and current day
+    const newDate = new Date(year, monthIndex, dayOfMonth);
+
+    // Format as YYYY-MM-DD for the input field
+    const formattedDate = newDate.toISOString().split('T')[0];
+
+    // Only update if the date has actually changed to avoid infinite loops
+    if (formData.date !== formattedDate) {
+      setFormData(prev => ({ ...prev, date: formattedDate }));
+    }
+  }, [formData.accountingMonth]);
+
   // Use accounts from props or set defaults
   useEffect(() => {
     if (propAccounts) {
@@ -250,6 +278,9 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
                 required
               />
               {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
+              <p className="text-xs text-gray-500 mt-1">
+                Auto-updates to match accounting month + current day
+              </p>
             </div>
 
             <div>

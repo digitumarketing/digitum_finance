@@ -106,6 +106,14 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ onSubmit, onCancel, exch
     }
   }, [formData.status, formData.originalAmount]);
 
+  // Auto-set accounting month based on date when status is Received or Partial
+  useEffect(() => {
+    if ((formData.status === 'Received' || formData.status === 'Partial') && formData.date) {
+      const monthFromDate = formData.date.slice(0, 7);
+      setFormData(prev => ({ ...prev, accountingMonth: monthFromDate }));
+    }
+  }, [formData.status, formData.date]);
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 

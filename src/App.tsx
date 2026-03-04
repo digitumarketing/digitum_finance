@@ -164,7 +164,15 @@ function AppRoutes() {
               accounts={accounts}
               notificationSettings={notificationSettings}
               onUpdateRates={setExchangeRates}
-              onUpdateAccount={updateAccountBalance}
+              onUpdateAccount={(id: string, updates: Partial<any>) => {
+                if (updates.balance !== undefined) {
+                  const balance = Number(updates.balance);
+                  if (!isNaN(balance)) {
+                    return updateAccountBalance(id, balance);
+                  }
+                }
+                return Promise.resolve();
+              }}
               onAddAccount={addAccount}
               onDeleteAccount={deleteAccount}
               onUpdateNotificationSettings={updateNotificationSettings}

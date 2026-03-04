@@ -860,8 +860,7 @@ export const useSupabaseData = () => {
           balance: newBalance,
           converted_balance: convertedBalance,
         })
-        .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('id', id);
 
       if (error) {
         console.error('Error updating account balance:', error);
@@ -871,8 +870,8 @@ export const useSupabaseData = () => {
       console.log('Account balance updated successfully:', id);
 
       // Update local state to show the new balance immediately
-      setAccounts(prev => prev.map(acc => 
-        acc.id === id 
+      setAccounts(prev => prev.map(acc =>
+        acc.id === id
           ? { ...acc, balance: newBalance, convertedBalance, lastUpdated: new Date().toISOString() }
           : acc
       ));

@@ -1029,11 +1029,10 @@ export const useSupabaseData = () => {
     try {
       console.log('Starting to update exchange rates...', newRates);
 
-      // First, get all existing currencies from the database
+      // First, get all existing currencies from the database (shared company-wide)
       const { data: existingRates, error: fetchError } = await supabase
         .from('exchange_rates')
-        .select('currency')
-        .eq('user_id', user.id);
+        .select('currency');
 
       if (fetchError) {
         console.error('Error fetching existing rates:', fetchError);
@@ -1054,7 +1053,6 @@ export const useSupabaseData = () => {
         const { error: deleteError } = await supabase
           .from('exchange_rates')
           .delete()
-          .eq('user_id', user.id)
           .in('currency', currenciesToDelete);
 
         if (deleteError) {
@@ -1069,11 +1067,10 @@ export const useSupabaseData = () => {
         if (currency !== 'PKR') {
           console.log(`Updating ${currency} to rate ${rate}`);
 
-          // Check if the rate already exists
+          // Check if the rate already exists (company-wide, not per user)
           const { data: existing } = await supabase
             .from('exchange_rates')
             .select('id')
-            .eq('user_id', user.id)
             .eq('currency', currency)
             .maybeSingle();
 

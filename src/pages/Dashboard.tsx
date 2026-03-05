@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { DashboardSummary } from '../components/DashboardSummary';
 import { IncomeForm } from '../components/IncomeForm';
 import { ExpenseForm } from '../components/ExpenseForm';
-import { Download, Upload, Plus, Search, Calendar, Filter, MoreVertical, ChevronDown, Edit2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Upload, Plus, Search, Calendar, Filter, MoreVertical, ChevronDown, CreditCard as Edit2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '../utils/helpers';
 import * as XLSX from 'xlsx';
 

@@ -131,6 +131,39 @@ export const getCurrencyFlag = (currency: string): string => {
     INR: '🇮🇳',
     SAR: '🇸🇦'
   };
-  
+
   return flags[currency] || '💱';
+};
+
+export const convertAccountingMonthToYYYYMM = (accountingMonth: string): string => {
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const [monthName, yearStr] = accountingMonth.split(' ');
+  const monthIndex = monthNames.indexOf(monthName);
+
+  if (monthIndex === -1 || !yearStr) {
+    return '';
+  }
+
+  const monthNum = String(monthIndex + 1).padStart(2, '0');
+  return `${yearStr}-${monthNum}`;
+};
+
+export const convertYYYYMMToAccountingMonth = (yyyymm: string): string => {
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const [year, month] = yyyymm.split('-');
+  const monthIndex = parseInt(month) - 1;
+
+  if (monthIndex < 0 || monthIndex > 11 || !year) {
+    return '';
+  }
+
+  return `${monthNames[monthIndex]} ${year}`;
 };

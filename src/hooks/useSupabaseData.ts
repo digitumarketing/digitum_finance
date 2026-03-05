@@ -11,7 +11,7 @@ import {
   Currency,
   AccountName
 } from '../types';
-import { getCurrentMonth, calculateConvertedAmount } from '../utils/helpers';
+import { getCurrentMonth, calculateConvertedAmount, convertAccountingMonthToYYYYMM } from '../utils/helpers';
 
 export const useSupabaseData = () => {
   const { user, profile } = useSupabaseAuth();
@@ -1353,10 +1353,14 @@ export const useSupabaseData = () => {
     }
   }, [user, loadAccounts]);
 
-  // Filter data by selected month
+  // Filter data by selected month using accountingMonth field
   const monthlyIncome = selectedMonth === 'all'
     ? income
-    : income.filter(item => item.date.startsWith(selectedMonth));
+    : income.filter(item => {
+        if (!item.accountingMonth) return false;
+        const itemMonth = convertAccountingMonthToYYYYMM(item.accountingMonth);
+        return itemMonth === selectedMonth;
+      });
   const monthlyExpenses = selectedMonth === 'all'
     ? expenses
     : expenses.filter(item => item.date.startsWith(selectedMonth));

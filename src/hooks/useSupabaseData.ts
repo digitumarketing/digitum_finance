@@ -338,6 +338,7 @@ export const useSupabaseData = () => {
         notes: item.notes || '',
         account: item.account_name,
         dueDate: item.due_date,
+        accountingMonth: item.accounting_month,
         manualConversionRate: item.manual_conversion_rate ? parseFloat(item.manual_conversion_rate) : undefined,
         manualPKRAmount: item.manual_pkr_amount ? parseFloat(item.manual_pkr_amount) : undefined,
         userId: item.user_id,
@@ -697,6 +698,7 @@ export const useSupabaseData = () => {
           notes: expenseData.notes || '',
           account_name: expenseData.account,
           due_date: expenseData.dueDate || null,
+          accounting_month: expenseData.accountingMonth || null,
           manual_conversion_rate: expenseData.manualConversionRate || null,
           manual_pkr_amount: expenseData.manualPKRAmount || null,
         })
@@ -753,6 +755,7 @@ export const useSupabaseData = () => {
         notes: updates.notes || '',
         account_name: updates.account,
         due_date: updates.dueDate || null,
+        accounting_month: updates.accountingMonth || null,
         manual_conversion_rate: updates.manualConversionRate || null,
         manual_pkr_amount: updates.manualPKRAmount || null,
       };
@@ -1363,7 +1366,11 @@ export const useSupabaseData = () => {
       });
   const monthlyExpenses = selectedMonth === 'all'
     ? expenses
-    : expenses.filter(item => item.date.startsWith(selectedMonth));
+    : expenses.filter(item => {
+        if (!item.accountingMonth) return false;
+        const itemMonth = convertAccountingMonthToYYYYMM(item.accountingMonth);
+        return itemMonth === selectedMonth;
+      });
 
   // Calculate dashboard summary
   const dashboardSummary = {

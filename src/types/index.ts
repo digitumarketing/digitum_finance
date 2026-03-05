@@ -99,6 +99,9 @@ export interface Expense {
   // Due date for pending payments
   dueDate?: string; // Expected payment date for pending expenses
 
+  // Accounting month for expense tracking
+  accountingMonth?: string; // Month to record expense (MMMM YYYY format, e.g., 'February 2026')
+
   // Manual conversion tracking
   manualConversionRate?: number; // User-entered conversion rate
   manualPKRAmount?: number; // User-entered PKR amount (override)

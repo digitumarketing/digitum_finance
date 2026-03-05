@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Info, Calculator, Building2, DollarSign, Edit, Clock } from 'lucide-react';
+import { Plus, X, Info, Calculator, Building2, DollarSign, Edit, Clock, Calendar } from 'lucide-react';
 import { Currency, ExpenseCategory, PaymentStatus, AccountName, getAccountCurrencyMap } from '../types';
 import { formatCurrency } from '../utils/helpers';
 
@@ -12,7 +12,8 @@ interface ExpenseFormData {
   paymentStatus: PaymentStatus;
   notes: string;
   account: AccountName;
-  dueDate?: string; // New field for due date
+  dueDate?: string;
+  accountingMonth?: string;
   manualConversionRate?: number;
   manualPKRAmount?: number;
 }
@@ -43,6 +44,11 @@ const expenseCategories: ExpenseCategory[] = [
 
 const paymentStatuses: PaymentStatus[] = ['Pending', 'Done'];
 
+const formatAccountingMonth = (date: Date): string => {
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+};
+
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({ onSubmit, onCancel, exchangeRates, accounts: propAccounts, editData }) => {
   const [formData, setFormData] = useState<ExpenseFormData>({
     date: editData?.date || new Date().toISOString().split('T')[0],
@@ -54,6 +60,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ onSubmit, onCancel, ex
     notes: editData?.notes || '',
     account: editData?.account || 'Bank Alfalah',
     dueDate: editData?.dueDate || '',
+    accountingMonth: editData?.accountingMonth || formatAccountingMonth(new Date()),
     manualConversionRate: editData?.manualConversionRate || undefined,
     manualPKRAmount: editData?.manualPKRAmount || undefined,
   });
@@ -196,6 +203,9 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ onSubmit, onCancel, ex
                 required
               />
               {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
+              <p className="text-xs text-gray-500 mt-1">
+                Actual transaction date (not affected by accounting month)
+              </p>
             </div>
 
             <div>
@@ -212,6 +222,35 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ onSubmit, onCancel, ex
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Accounting Month */}
+          <div>
+            <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+              <Calendar className="w-4 h-4" />
+              <span>Accounting Month</span>
+            </label>
+            <input
+              type="month"
+              value={formData.accountingMonth ?
+                (() => {
+                  const [monthName, year] = formData.accountingMonth.split(' ');
+                  const monthIndex = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].indexOf(monthName);
+                  return `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+                })() : ''
+              }
+              onChange={(e) => {
+                const [year, month] = e.target.value.split('-');
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                const monthName = monthNames[parseInt(month) - 1];
+                handleChange('accountingMonth', `${monthName} ${year}`);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Month to which this expense will be assigned in reports
+            </p>
           </div>
 
           {/* Due Date (for pending payments) */}

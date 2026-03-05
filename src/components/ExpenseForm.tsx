@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Info, Calculator, Building2, DollarSign, Edit, Clock, Calendar } from 'lucide-react';
+import { Plus, X, Info, Calculator, Building2, DollarSign, CreditCard as Edit, Clock, Calendar } from 'lucide-react';
 import { Currency, ExpenseCategory, PaymentStatus, AccountName, getAccountCurrencyMap } from '../types';
 import { formatCurrency } from '../utils/helpers';
 

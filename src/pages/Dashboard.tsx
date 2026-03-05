@@ -59,6 +59,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       statusValue: income.status,
       originalAmount: income.receivedAmount,
       convertedAmount: income.convertedAmount,
+      accountingMonth: income.accountingMonth,
     }));
 
     const expenseTransactions = allExpenses.map(expense => ({
@@ -68,15 +69,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
       originalAmount: expense.amount,
       convertedAmount: expense.convertedAmount,
       clientName: null, // Expenses don't have clients
+      accountingMonth: expense.accountingMonth,
     }));
 
     const combined = [...incomeTransactions, ...expenseTransactions];
 
     // Apply filters
     return combined.filter(transaction => {
-      // Month filter - Filter by selected month first
+      // Month filter - Filter by accounting month
       if (selectedMonth !== 'all') {
-        const transactionMonth = transaction.date.substring(0, 7); // Get YYYY-MM
+        // Convert accounting month to YYYY-MM format for comparison
+        if (!transaction.accountingMonth) return false;
+        const [monthName, year] = transaction.accountingMonth.split(' ');
+        const monthIndex = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].indexOf(monthName);
+        const transactionMonth = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
         if (transactionMonth !== selectedMonth) return false;
       }
 
@@ -143,20 +149,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const monthlyOverview = useMemo(() => {
     const overview: Record<string, { income: number; expenses: number; net: number; count: number }> = {};
 
-    // Filter income by selected month
+    // Helper to convert accounting month to YYYY-MM
+    const convertToYYYYMM = (accountingMonth: string) => {
+      if (!accountingMonth) return null;
+      const [monthName, year] = accountingMonth.split(' ');
+      const monthIndex = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].indexOf(monthName);
+      return `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+    };
+
+    // Filter income by selected month using accounting month
     const filteredIncome = selectedMonth === 'all'
       ? allIncome
-      : allIncome.filter(income => income.date.substring(0, 7) === selectedMonth);
+      : allIncome.filter(income => convertToYYYYMM(income.accountingMonth) === selectedMonth);
 
-    // Filter expenses by selected month
+    // Filter expenses by selected month using accounting month
     const filteredExpenses = selectedMonth === 'all'
       ? allExpenses
-      : allExpenses.filter(expense => expense.date.substring(0, 7) === selectedMonth);
+      : allExpenses.filter(expense => convertToYYYYMM(expense.accountingMonth) === selectedMonth);
 
-    // Group income by month
+    // Group income by accounting month
     filteredIncome.forEach(income => {
       if (income.status === 'Received' || income.status === 'Partial') {
-        const monthKey = income.date.substring(0, 7); // YYYY-MM
+        const monthKey = convertToYYYYMM(income.accountingMonth);
+        if (!monthKey) return;
         if (!overview[monthKey]) {
           overview[monthKey] = { income: 0, expenses: 0, net: 0, count: 0 };
         }
@@ -165,10 +180,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }
     });
 
-    // Group expenses by month
+    // Group expenses by accounting month
     filteredExpenses.forEach(expense => {
       if (expense.paymentStatus === 'Done') {
-        const monthKey = expense.date.substring(0, 7); // YYYY-MM
+        const monthKey = convertToYYYYMM(expense.accountingMonth);
+        if (!monthKey) return;
         if (!overview[monthKey]) {
           overview[monthKey] = { income: 0, expenses: 0, net: 0, count: 0 };
         }
@@ -209,7 +225,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Export to Excel
   const handleExport = () => {
     const allData = filteredTransactions.map(t => ({
-      Date: t.date,
+      'Accounting Month': t.accountingMonth || 'Not Assigned',
+      'Transaction Date': t.date,
       Type: t.type,
       Description: t.description,
       Category: t.category,
@@ -385,7 +402,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <table className="w-full">
                 <thead>
                   <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <th className="pb-3 pr-4">Date</th>
+                    <th className="pb-3 pr-4">Accounting Period</th>
                     <th className="pb-3 pr-4">Description</th>
                     <th className="pb-3 pr-4">Type</th>
                     <th className="pb-3 pr-4">Category</th>
@@ -399,8 +416,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <tbody className="divide-y divide-gray-200">
                   {paginatedTransactions.map((transaction) => (
                   <tr key={`${transaction.type}-${transaction.id}`} className="hover:bg-white transition-colors">
-                    <td className="py-4 pr-4 text-sm text-gray-900 whitespace-nowrap">
-                      {new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    <td className="py-4 pr-4 text-sm whitespace-nowrap">
+                      <div className="font-semibold text-gray-900">
+                        {transaction.accountingMonth || 'Not Assigned'}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
                     </td>
                     <td className="py-4 pr-4">
                       <div className="text-sm font-medium text-gray-900">{transaction.description}</div>

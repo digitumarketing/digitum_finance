@@ -1,22 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ExchangeRates } from '../types';
 import { formatCurrency, formatDate, generateId } from '../utils/helpers';
-import { 
-  DollarSign, 
-  Save, 
-  RotateCcw, 
-  RefreshCw, 
-  History, 
-  AlertTriangle,
-  CheckCircle,
-  Info,
-  TrendingUp,
-  Globe,
-  Plus,
-  Trash2,
-  X,
-  Edit
-} from 'lucide-react';
+import { DollarSign, Save, RotateCcw, RefreshCw, History, AlertTriangle, CheckCircle, Info, TrendingUp, Globe, Plus, Trash2, X, CreditCard as Edit } from 'lucide-react';
 
 interface ExchangeRateHistory {
   id: string;

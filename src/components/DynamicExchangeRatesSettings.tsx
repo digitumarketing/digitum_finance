@@ -143,10 +143,16 @@ export const DynamicExchangeRatesSettings: React.FC<DynamicExchangeRatesSettings
 
   const handleResetToDefaults = () => {
     const defaultRates: ExchangeRates = {
-      USD: 278.50,
-      AED: 75.85,
-      GBP: 354.20,
       PKR: 1,
+      USD: 278.50,
+      GBP: 350.00,
+      AUD: 197.37,
+      EUR: 325.29,
+      CAD: 204.35,
+      NZD: 165.63,
+      SGD: 219.01,
+      NOK: 28.95,
+      WON: 0.19,
     };
     setEditRates(defaultRates);
   };

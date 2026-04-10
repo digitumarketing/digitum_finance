@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
-import { User, LogOut, Shield, Clock, Settings, ChevronDown, X, Key, Edit, Phone, Building, FileText } from 'lucide-react';
+import { User, LogOut, Shield, Settings, ChevronDown, X, Key, CreditCard as Edit, Phone, Building, FileText } from 'lucide-react';
 import { formatDate } from '../utils/helpers';
 import { PasswordChangeForm } from './PasswordChangeForm';
 import { supabase } from '../lib/supabase';
@@ -227,16 +227,6 @@ export const UserProfile: React.FC = () => {
               </button>
             </div>
 
-            {/* Security Notice */}
-            <div className="p-4 bg-gray-50 rounded-b-xl">
-              <div className="flex items-center space-x-2">
-                <Clock className="w-4 h-4 text-gray-500" />
-                <p className="text-xs text-gray-600">
-                  Local storage session (30 days)
-                Supabase session (secure authentication)
-                </p>
-              </div>
-            </div>
           </div>
         )}
       </div>

@@ -4,7 +4,6 @@ import { Navigation } from './Navigation';
 import { MonthSelector } from './MonthSelector';
 import { UserProfile } from './UserProfile';
 import { NotificationPanel } from './NotificationPanel';
-import { Database } from 'lucide-react';
 
 interface MainLayoutProps {
   selectedMonth: Date;
@@ -70,10 +69,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                 <h1 className="text-xl font-semibold text-gray-900">
                   {getPageTitle()}
                 </h1>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Database className="w-4 h-4 text-blue-600" />
-                <span className="text-sm text-blue-600 font-medium">Supabase Database</span>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-shrink-0">

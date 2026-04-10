@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, Eye, EyeOff, Shield, AlertCircle, Loader, Database } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, Shield, AlertCircle, Loader } from 'lucide-react';
 
 interface LoginFormProps {
   onLogin: (credentials: { email: string; password: string }) => Promise<boolean>;
@@ -73,10 +73,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading, error,
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Digitum</h1>
           <p className="text-gray-600">Secure Finance Management System</p>
-          <div className="flex items-center justify-center space-x-2 mt-2">
-            <Database className="w-4 h-4 text-blue-600" />
-            <span className="text-sm text-blue-600 font-medium">Supabase Database</span>
-          </div>
         </div>
 
         {/* Login Form */}
@@ -189,12 +185,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading, error,
           </form>
         </div>
 
-        {/* Security Notice */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            🔒 Your data is securely stored in Supabase with enterprise-grade security
-          </p>
-        </div>
       </div>
     </div>
   );

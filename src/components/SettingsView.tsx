@@ -176,24 +176,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </div>
 
-      {/* Data Persistence Information */}
-      <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-        <div className="flex items-start space-x-3">
-          <Database className="w-5 h-5 text-green-600 mt-0.5" />
-          <div>
-            <h4 className="font-medium text-green-900 mb-2">Supabase Cloud Database Storage</h4>
-            <div className="text-sm text-green-800 space-y-2">
-              <p>• <strong>Cloud Storage:</strong> All your data is securely stored in Supabase cloud database</p>
-              <p>• <strong>Session Length:</strong> Login sessions last for 30 days and auto-extend with activity</p>
-              <p>• <strong>Data Safety:</strong> Your data is encrypted and backed up automatically by Supabase</p>
-              <p>• <strong>Access Anywhere:</strong> Login from any device or browser to access your data</p>
-              <p>• <strong>No Data Loss:</strong> Clearing browser cache will NOT delete your data</p>
-              <p>• <strong>Backup Recommendation:</strong> Use the Data Management section to export your data for local backups</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Settings Navigation Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="border-b border-gray-100">

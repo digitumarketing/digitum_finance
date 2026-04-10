@@ -157,13 +157,6 @@ export const Navigation: React.FC<NavigationProps> = ({ canAccessTab }) => {
           })}
         </div>
 
-        {/* Security Footer */}
-        <div className="p-3 border-t border-gray-100">
-          <div className="flex items-center space-x-2 text-xs text-gray-500">
-            <Lock className="w-3 h-3" />
-            <span>Secured with RBAC</span>
-          </div>
-        </div>
       </nav>
 
       {/* Mobile Navigation */}
@@ -225,13 +218,6 @@ export const Navigation: React.FC<NavigationProps> = ({ canAccessTab }) => {
           })}
         </div>
 
-        {/* Security Footer */}
-        <div className="p-3 border-t border-gray-100">
-          <div className="flex items-center space-x-2 text-xs text-gray-500">
-            <Lock className="w-3 h-3" />
-            <span>Secured with RBAC</span>
-          </div>
-        </div>
       </nav>
 
       {/* Mobile Bottom Navigation */}

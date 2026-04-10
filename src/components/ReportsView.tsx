@@ -924,77 +924,123 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       {/* Data Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Income Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-4 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">Filtered Income Data</h3>
-            <p className="text-sm text-gray-500">{filteredIncome.length} transactions</p>
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold text-gray-900">Filtered Income Data</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{filteredIncome.length} records</p>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-green-600 font-semibold">{formatCurrency(filteredIncome.filter(i => i.status === 'Received' || i.status === 'Partial').reduce((s, i) => s + i.splitAmountPKR, 0))}</span>
+            </div>
           </div>
-          <div className="overflow-x-auto max-h-96">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left">Date</th>
-                  <th className="px-4 py-2 text-left">Client</th>
-                  <th className="px-4 py-2 text-left">Amount</th>
-                  <th className="px-4 py-2 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredIncome.slice(0, 10).map(item => (
-                  <tr key={item.id}>
-                    <td className="px-4 py-2">{formatDate(item.date)}</td>
-                    <td className="px-4 py-2">{item.clientName}</td>
-                    <td className="px-4 py-2">{formatCurrency(item.splitAmountPKR)}</td>
-                    <td className="px-4 py-2">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        item.status === 'Received' ? 'bg-green-100 text-green-800' :
-                        item.status === 'Partial' ? 'bg-yellow-100 text-yellow-800' :
-                        item.status === 'Upcoming' ? 'bg-blue-100 text-blue-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </td>
+          <div className="overflow-x-auto" style={{ maxHeight: '420px', overflowY: 'auto' }}>
+            {filteredIncome.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-gray-400 text-sm">No income data for selected period</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="sticky top-0 bg-gray-50 z-10">
+                  <tr className="border-b border-gray-100">
+                    <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredIncome.slice(0, 15).map(item => (
+                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-5 py-3 text-sm text-gray-700 whitespace-nowrap">{formatDate(item.date)}</td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-medium text-gray-900">{item.clientName}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{item.description}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{item.category}</span>
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900 whitespace-nowrap">{formatCurrency(item.splitAmountPKR)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                          item.status === 'Received' ? 'bg-green-50 text-green-700 border-green-200' :
+                          item.status === 'Partial' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                          item.status === 'Upcoming' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          'bg-gray-50 text-gray-600 border-gray-200'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {filteredIncome.length > 15 && (
+              <div className="px-5 py-3 border-t border-gray-100 text-center">
+                <span className="text-xs text-gray-400">Showing 15 of {filteredIncome.length} records — export for full data</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Expenses Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-4 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">Filtered Expense Data</h3>
-            <p className="text-sm text-gray-500">{filteredExpenses.length} transactions</p>
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold text-gray-900">Filtered Expense Data</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{filteredExpenses.length} records</p>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-red-600 font-semibold">{formatCurrency(filteredExpenses.reduce((s, e) => s + e.convertedAmount, 0))}</span>
+            </div>
           </div>
-          <div className="overflow-x-auto max-h-96">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left">Date</th>
-                  <th className="px-4 py-2 text-left">Description</th>
-                  <th className="px-4 py-2 text-left">Amount</th>
-                  <th className="px-4 py-2 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredExpenses.slice(0, 10).map(item => (
-                  <tr key={item.id}>
-                    <td className="px-4 py-2">{formatDate(item.date)}</td>
-                    <td className="px-4 py-2">{item.description}</td>
-                    <td className="px-4 py-2">{formatCurrency(item.convertedAmount)}</td>
-                    <td className="px-4 py-2">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        item.paymentStatus === 'Done' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
-                      }`}>
-                        {item.paymentStatus}
-                      </span>
-                    </td>
+          <div className="overflow-x-auto" style={{ maxHeight: '420px', overflowY: 'auto' }}>
+            {filteredExpenses.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-gray-400 text-sm">No expense data for selected period</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="sticky top-0 bg-gray-50 z-10">
+                  <tr className="border-b border-gray-100">
+                    <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredExpenses.slice(0, 15).map(item => (
+                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-5 py-3 text-sm text-gray-700 whitespace-nowrap">{formatDate(item.date)}</td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-medium text-gray-900">{item.description}</div>
+                        {item.notes && <div className="text-xs text-gray-400 mt-0.5">{item.notes}</div>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{item.category}</span>
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900 whitespace-nowrap">{formatCurrency(item.convertedAmount)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                          item.paymentStatus === 'Done' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-orange-50 text-orange-700 border-orange-200'
+                        }`}>
+                          {item.paymentStatus}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {filteredExpenses.length > 15 && (
+              <div className="px-5 py-3 border-t border-gray-100 text-center">
+                <span className="text-xs text-gray-400">Showing 15 of {filteredExpenses.length} records — export for full data</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

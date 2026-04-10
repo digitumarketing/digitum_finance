@@ -169,17 +169,6 @@ export const useSupabaseData = () => {
     };
   }, [user, profile]);
 
-  // Periodic check every 5 minutes to surface newly due scheduled notifications
-  useEffect(() => {
-    if (!user || !profile?.is_active) return;
-
-    const interval = setInterval(() => {
-      loadNotifications();
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [user, profile, loadNotifications]);
-
   // Load all data from Supabase
   const loadAllData = useCallback(async () => {
     if (!user?.id || !profile?.is_active) {
@@ -449,6 +438,17 @@ export const useSupabaseData = () => {
       console.error('Error in loadNotifications:', error);
     }
   }, [user, profile]);
+
+  // Periodic check every 5 minutes to surface newly due scheduled notifications
+  useEffect(() => {
+    if (!user || !profile?.is_active) return;
+
+    const interval = setInterval(() => {
+      loadNotifications();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [user, profile, loadNotifications]);
 
   // Load notification settings
   const loadNotificationSettings = useCallback(async () => {

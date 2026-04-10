@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building2, Plus, CreditCard as Edit2, Trash2, Star, X, Check, AlertTriangle } from 'lucide-react';
+import { Building2, Plus, CreditCard as Edit2, Trash2, Star, X, Check, AlertTriangle, ChevronRight } from 'lucide-react';
 import { useOfficeContext, Office } from '../contexts/OfficeContext';
 
 interface OfficeManagementProps {
@@ -75,25 +75,30 @@ export const OfficeManagement: React.FC<OfficeManagementProps> = ({ onClose }) =
   };
 
   const handleSetDefault = async (id: string) => {
-    try {
-      await setDefaultOffice(id);
-    } catch {}
+    try { await setDefaultOffice(id); } catch {}
+  };
+
+  const getTitle = () => {
+    if (view === 'create') return 'New Office';
+    if (view === 'edit') return `Rename "${editingOffice?.name}"`;
+    return 'Manage Offices';
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden relative">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {view !== 'list' && (
-              <button onClick={() => setView('list')} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                <X className="w-4 h-4 text-gray-500" />
+              <button
+                onClick={() => { setView('list'); setError(null); }}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
               </button>
             )}
-            <h2 className="text-lg font-bold text-gray-900">
-              {view === 'list' ? 'Manage Offices' : view === 'create' ? 'New Office' : 'Edit Office'}
-            </h2>
+            <h2 className="text-lg font-bold text-gray-900">{getTitle()}</h2>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
             <X className="w-5 h-5 text-gray-400" />
@@ -108,64 +113,71 @@ export const OfficeManagement: React.FC<OfficeManagementProps> = ({ onClose }) =
           </div>
         )}
 
-        {view === 'list' ? (
+        {/* List View */}
+        {view === 'list' && (
           <>
-            <div className="p-6 space-y-3 max-h-96 overflow-y-auto">
-              {offices.map(office => (
-                <div
-                  key={office.id}
-                  className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${selectedOffice?.id === office.id ? 'border-gray-300 bg-gray-50' : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'}`}
-                >
+            <div className="px-6 pt-5 pb-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Your Offices</p>
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {offices.map(office => (
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: `${office.color}20` }}
+                    key={office.id}
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${selectedOffice?.id === office.id ? 'border-gray-300 bg-gray-50' : 'border-gray-100 hover:border-gray-200'}`}
                   >
-                    <Building2 className="w-5 h-5" style={{ color: office.color }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{office.name}</p>
-                      {office.isDefault && (
-                        <span className="px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded text-xs font-medium">Default</span>
-                      )}
-                      {selectedOffice?.id === office.id && (
-                        <span className="px-1.5 py-0.5 bg-green-50 text-green-600 border border-green-200 rounded text-xs font-medium">Active</span>
+                    <div
+                      className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: `${office.color}20` }}
+                    >
+                      <Building2 className="w-4 h-4" style={{ color: office.color }} />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{office.name}</p>
+                        {office.isDefault && (
+                          <span className="px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded text-xs font-medium">Default</span>
+                        )}
+                        {selectedOffice?.id === office.id && (
+                          <span className="px-1.5 py-0.5 bg-green-50 text-green-600 border border-green-200 rounded text-xs font-medium">Active</span>
+                        )}
+                      </div>
+                      {office.description && (
+                        <p className="text-xs text-gray-400 truncate mt-0.5">{office.description}</p>
                       )}
                     </div>
-                    {office.description && (
-                      <p className="text-xs text-gray-400 truncate mt-0.5">{office.description}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {!office.isDefault && (
+
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
                       <button
-                        onClick={() => handleSetDefault(office.id)}
-                        title="Set as default"
-                        className="p-1.5 text-gray-300 hover:text-amber-500 rounded-lg hover:bg-amber-50 transition-colors"
+                        onClick={() => startEdit(office)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                       >
-                        <Star className="w-3.5 h-3.5" />
+                        <Edit2 className="w-3 h-3" />
+                        Rename
                       </button>
-                    )}
-                    <button
-                      onClick={() => startEdit(office)}
-                      className="p-1.5 text-gray-300 hover:text-blue-500 rounded-lg hover:bg-blue-50 transition-colors"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    {offices.length > 1 && (
-                      <button
-                        onClick={() => setConfirmDeleteId(office.id)}
-                        className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                      {!office.isDefault && (
+                        <button
+                          onClick={() => handleSetDefault(office.id)}
+                          title="Set as default"
+                          className="p-1.5 text-gray-300 hover:text-amber-500 rounded-lg hover:bg-amber-50 transition-colors ml-0.5"
+                        >
+                          <Star className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {offices.length > 1 && (
+                        <button
+                          onClick={() => setConfirmDeleteId(office.id)}
+                          className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            <div className="px-6 pb-6">
+            <div className="px-6 pb-6 pt-3">
               <button
                 onClick={startCreate}
                 className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm font-medium text-gray-500 hover:border-green-300 hover:text-green-600 hover:bg-green-50/50 transition-all"
@@ -175,10 +187,27 @@ export const OfficeManagement: React.FC<OfficeManagementProps> = ({ onClose }) =
               </button>
             </div>
           </>
-        ) : (
+        )}
+
+        {/* Create / Edit Form */}
+        {(view === 'create' || view === 'edit') && (
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            {view === 'edit' && editingOffice && (
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${editingOffice.color}20` }}>
+                  <Building2 className="w-4 h-4" style={{ color: editingOffice.color }} />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Editing</p>
+                  <p className="text-sm font-semibold text-gray-900">{editingOffice.name}</p>
+                </div>
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Office Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {view === 'edit' ? 'New Name' : 'Office Name'}
+              </label>
               <input
                 type="text"
                 value={form.name}
@@ -231,7 +260,7 @@ export const OfficeManagement: React.FC<OfficeManagementProps> = ({ onClose }) =
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setView('list')}
+                onClick={() => { setView('list'); setError(null); }}
                 className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -247,15 +276,15 @@ export const OfficeManagement: React.FC<OfficeManagementProps> = ({ onClose }) =
           </form>
         )}
 
-        {/* Delete Confirmation */}
+        {/* Delete Confirmation Overlay */}
         {confirmDeleteId && (
-          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 rounded-2xl">
+          <div className="absolute inset-0 bg-white/96 backdrop-blur-sm flex flex-col items-center justify-center p-8 rounded-2xl">
             <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-5">
               <Trash2 className="w-8 h-8 text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Office?</h3>
-            <p className="text-sm text-gray-500 text-center mb-6">
-              All data linked to this office (income, expenses, accounts, notifications) will be permanently deleted. This cannot be undone.
+            <p className="text-sm text-gray-500 text-center mb-6 max-w-xs">
+              All data linked to this office — income, expenses, accounts, and notifications — will be permanently deleted.
             </p>
             <div className="flex gap-3 w-full max-w-xs">
               <button

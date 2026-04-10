@@ -38,15 +38,6 @@ const mapRow = (row: any): Office => ({
   updatedAt: row.updated_at,
 });
 
-async function callApi(method: string, body?: unknown): Promise<any> {
-  const { data, error } = await supabase.functions.invoke('offices-api', {
-    method,
-    body: body ?? undefined,
-  });
-  if (error) throw new Error(error.message || 'Request failed');
-  return data;
-}
-
 export function OfficeProvider({ children }: { children: React.ReactNode }) {
   const { user, profile } = useSupabaseAuth();
   const [offices, setOffices] = useState<Office[]>([]);
@@ -63,10 +54,20 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
-      let rows: any[] = await callApi('GET');
+      let { data: rows, error } = await supabase
+        .from('offices')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
 
       if (!rows || rows.length === 0) {
-        rows = await callApi('POST', { action: 'ensure-default' });
+        const { data: inserted, error: insertError } = await supabase
+          .from('offices')
+          .insert({ name: 'Main Office', description: 'Default office', color: '#10b981', user_id: user.id, is_default: true })
+          .select('*');
+        if (insertError) throw insertError;
+        rows = inserted || [];
       }
 
       if (!rows || rows.length === 0) {
@@ -112,25 +113,32 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
   }, [offices, user]);
 
   const createOffice = useCallback(async (data: { name: string; description?: string; color?: string }): Promise<Office> => {
-    const row = await callApi('POST', {
-      name: data.name,
-      description: data.description || '',
-      color: data.color || '#10b981',
-    });
+    if (!user) throw new Error('Not authenticated');
+    const { data: row, error } = await supabase
+      .from('offices')
+      .insert({ name: data.name, description: data.description || '', color: data.color || '#10b981', user_id: user.id, is_default: false })
+      .select('*')
+      .single();
+    if (error) throw error;
     const office = mapRow(row);
     setOffices(prev => [...prev, office]);
     return office;
-  }, []);
+  }, [user]);
 
   const updateOffice = useCallback(async (id: string, data: { name?: string; description?: string; color?: string }) => {
-    await callApi('PATCH', { id, ...data });
+    const { error } = await supabase
+      .from('offices')
+      .update({ ...data, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
     setOffices(prev => prev.map(o => o.id === id ? { ...o, ...data } : o));
     setSelectedOffice(prev => prev?.id === id ? { ...prev, ...data } as Office : prev);
   }, []);
 
   const deleteOffice = useCallback(async (id: string) => {
     if (offices.length <= 1) throw new Error('Cannot delete the last office');
-    await callApi('DELETE', { id });
+    const { error } = await supabase.from('offices').delete().eq('id', id);
+    if (error) throw error;
     const remaining = offices.filter(o => o.id !== id);
     setOffices(remaining);
     if (selectedOffice?.id === id) {
@@ -143,9 +151,11 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
   }, [offices, selectedOffice, user]);
 
   const setDefaultOffice = useCallback(async (id: string) => {
-    await callApi('POST', { action: 'set-default', id });
+    if (!user) throw new Error('Not authenticated');
+    await supabase.from('offices').update({ is_default: false }).eq('user_id', user.id);
+    await supabase.from('offices').update({ is_default: true }).eq('id', id);
     setOffices(prev => prev.map(o => ({ ...o, isDefault: o.id === id })));
-  }, []);
+  }, [user]);
 
   const refreshOffices = useCallback(async () => {
     await loadOffices();

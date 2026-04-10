@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { useSupabaseData } from './hooks/useSupabaseData';
 import { LoginForm } from './components/LoginForm';
@@ -11,12 +11,14 @@ import { Expenses } from './pages/Expenses';
 import { Accounts } from './pages/Accounts';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
+import { OfficeProvider, useOfficeContext } from './contexts/OfficeContext';
 import { AlertTriangle } from 'lucide-react';
 
 function AppRoutes() {
-  const navigate = useNavigate();
   const { profile } = useSupabaseAuth();
+  const { selectedOffice, isLoading: officeLoading } = useOfficeContext();
   const isSuperAdmin = profile?.role === 'super_admin';
+  const officeId = selectedOffice?.id || null;
 
   const {
     income,
@@ -52,7 +54,18 @@ function AppRoutes() {
     bulkImportExpenses,
     deleteAllIncome,
     deleteAllExpenses,
-  } = useSupabaseData();
+  } = useSupabaseData(officeId);
+
+  if (officeLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading offices...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -225,10 +238,7 @@ function App() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Error</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={() => {
-              clearError();
-              window.location.reload();
-            }}
+            onClick={() => { clearError(); window.location.reload(); }}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Refresh Page
@@ -251,7 +261,9 @@ function App() {
 
   return (
     <SecurityProvider user={profile}>
-      <AppContent />
+      <OfficeProvider>
+        <AppContent />
+      </OfficeProvider>
     </SecurityProvider>
   );
 }

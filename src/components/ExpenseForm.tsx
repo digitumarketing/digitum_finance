@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Info, Calculator, Building2, DollarSign, CreditCard as Edit, Clock, Calendar } from 'lucide-react';
+import { Plus, Info, Calculator, Building2, DollarSign, CreditCard as Edit, Clock, Calendar } from 'lucide-react';
 import { Currency, ExpenseCategory, PaymentStatus, AccountName, getAccountCurrencyMap } from '../types';
 import { formatCurrency } from '../utils/helpers';
 
@@ -176,12 +176,6 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ onSubmit, onCancel, ex
               <p className="text-sm text-gray-600">Record expense with account-specific currency handling</p>
             </div>
           </div>
-          <button
-            onClick={onCancel}
-            className="p-2 hover:bg-white hover:bg-opacity-50 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
         </div>
       </div>
 

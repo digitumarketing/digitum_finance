@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building2, Plus, CreditCard as Edit2, Trash2, Star, X, Check, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Building2, Plus, CreditCard as Edit2, Trash2, Star, X, Check, AlertTriangle, ChevronLeft } from 'lucide-react';
 import { useOfficeContext, Office } from '../contexts/OfficeContext';
 
 interface OfficeManagementProps {
@@ -95,7 +95,7 @@ export const OfficeManagement: React.FC<OfficeManagementProps> = ({ onClose }) =
                 onClick={() => { setView('list'); setError(null); }}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600"
               >
-                <X className="w-4 h-4" />
+                <ChevronLeft className="w-4 h-4" />
               </button>
             )}
             <h2 className="text-lg font-bold text-gray-900">{getTitle()}</h2>

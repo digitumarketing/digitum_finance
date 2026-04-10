@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ExpenseForm } from '../components/ExpenseForm';
 import { DataTable } from '../components/DataTable';
+import { Modal } from '../components/Modal';
 import { Plus, Trash2 } from 'lucide-react';
 
 interface ExpensesProps {
@@ -79,8 +80,15 @@ export const Expenses: React.FC<ExpensesProps> = ({
         </div>
       </div>
 
-      {/* Expense Form */}
-      {showForm && (
+      {/* Expense Form Modal */}
+      <Modal
+        isOpen={showForm}
+        onClose={() => {
+          setShowForm(false);
+          setEditingExpense(null);
+        }}
+        maxWidth="3xl"
+      >
         <ExpenseForm
           onSubmit={handleSubmit}
           onCancel={() => {
@@ -91,7 +99,7 @@ export const Expenses: React.FC<ExpensesProps> = ({
           accounts={accounts.map(acc => ({ name: acc.name, currency: acc.currency }))}
           editData={editingExpense}
         />
-      )}
+      </Modal>
 
       {/* Expenses Table */}
       <DataTable

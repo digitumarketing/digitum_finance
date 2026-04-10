@@ -125,6 +125,61 @@ export const useSupabaseData = () => {
     }
   }, [user, profile]);
 
+  // Supabase Realtime subscription for live notifications
+  useEffect(() => {
+    if (!user || !profile?.is_active) return;
+
+    const channel = supabase
+      .channel(`notifications-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const notif = payload.new as any;
+          const scheduledFor = notif.scheduled_for ? new Date(notif.scheduled_for) : null;
+          if (!scheduledFor || scheduledFor <= new Date()) {
+            setNotifications(prev => {
+              if (prev.some(n => n.id === notif.id)) return prev;
+              return [{
+                id: notif.id,
+                type: notif.type,
+                title: notif.title,
+                message: notif.message,
+                priority: notif.priority,
+                isRead: notif.is_read,
+                createdAt: notif.created_at,
+                scheduledFor: notif.scheduled_for,
+                relatedId: notif.related_id,
+                channels: notif.channels || [],
+                metadata: notif.metadata || {},
+              }, ...prev];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, profile]);
+
+  // Periodic check every 5 minutes to surface newly due scheduled notifications
+  useEffect(() => {
+    if (!user || !profile?.is_active) return;
+
+    const interval = setInterval(() => {
+      loadNotifications();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [user, profile, loadNotifications]);
+
   // Load all data from Supabase
   const loadAllData = useCallback(async () => {
     if (!user?.id || !profile?.is_active) {
@@ -361,10 +416,12 @@ export const useSupabaseData = () => {
 
     try {
       console.log('Loading notifications...');
+      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
+        .or(`scheduled_for.is.null,scheduled_for.lte.${now}`)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -495,11 +552,31 @@ export const useSupabaseData = () => {
       }
 
       console.log('Income added successfully:', data);
-      
+
+      if (incomeData.status === 'Upcoming' && incomeData.dueDate) {
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          type: 'income_due',
+          title: `Payment Due: ${incomeData.clientName}`,
+          message: `Expected payment of ${incomeData.originalAmount} ${accountCurrency} from ${incomeData.clientName} is due on ${new Date(incomeData.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`,
+          priority: 'high',
+          is_read: false,
+          scheduled_for: incomeData.dueDate,
+          related_id: data.id,
+          channels: ['in_app'],
+          metadata: {
+            amount: incomeData.originalAmount,
+            currency: accountCurrency,
+            clientName: incomeData.clientName,
+            dueDate: incomeData.dueDate,
+          },
+        });
+      }
+
       // Reload data
       await loadIncome();
       await updateAccountBalances();
-      
+
       return data;
     } catch (error) {
       console.error('Error in addIncome:', error);
@@ -712,10 +789,29 @@ export const useSupabaseData = () => {
 
       console.log('Expense added successfully:', data);
 
+      if (expenseData.paymentStatus === 'Pending' && expenseData.dueDate) {
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          type: 'expense_due',
+          title: `Expense Due: ${expenseData.description}`,
+          message: `Payment of ${expenseData.amount} ${accountCurrency} for "${expenseData.description}" is due on ${new Date(expenseData.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`,
+          priority: 'medium',
+          is_read: false,
+          scheduled_for: expenseData.dueDate,
+          related_id: data.id,
+          channels: ['in_app'],
+          metadata: {
+            amount: expenseData.amount,
+            currency: accountCurrency,
+            dueDate: expenseData.dueDate,
+          },
+        });
+      }
+
       // Reload data
       await loadExpenses();
       await updateAccountBalances();
-      
+
       return data;
     } catch (error) {
       console.error('Error in addExpense:', error);

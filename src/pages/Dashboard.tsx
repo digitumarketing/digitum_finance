@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { DashboardSummary } from '../components/DashboardSummary';
 import { IncomeForm } from '../components/IncomeForm';
 import { ExpenseForm } from '../components/ExpenseForm';
+import { Modal } from '../components/Modal';
 import { Download, Upload, Plus, Search, MoreVertical, ChevronDown, CreditCard as Edit2, Trash2, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, DollarSign, FileText, ArrowUpDown } from 'lucide-react';
 import { formatCurrency } from '../utils/helpers';
 import * as XLSX from 'xlsx';
@@ -18,8 +19,8 @@ interface DashboardProps {
   onDeleteExpense: (id: string) => Promise<void>;
   onUpdateIncome: (id: string, data: any) => Promise<void>;
   onUpdateExpense: (id: string, data: any) => Promise<void>;
-  onAddIncome: () => void;
-  onAddExpense: () => void;
+  onAddIncome: (data: any) => Promise<void>;
+  onAddExpense: (data: any) => Promise<void>;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -47,6 +48,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [showCancelled] = useState(false);
   const [editingIncome, setEditingIncome] = useState<any>(null);
   const [editingExpense, setEditingExpense] = useState<any>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addFormType, setAddFormType] = useState<'income' | 'expense'>('income');
   const [currentPage, setCurrentPage] = useState(1);
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
   const transactionsPerPage = 15;
@@ -201,12 +204,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
     <div className="space-y-6">
       <DashboardSummary summary={summary} selectedMonth={selectedMonth} />
 
-      {editingIncome && (
+      <Modal isOpen={!!editingIncome} onClose={() => setEditingIncome(null)} maxWidth="3xl">
         <IncomeForm onSubmit={async (d) => { await onUpdateIncome(editingIncome.id, d); setEditingIncome(null); }} onCancel={() => setEditingIncome(null)} exchangeRates={exchangeRates} accounts={accounts.map(a => ({ name: a.name, currency: a.currency }))} editData={editingIncome} />
-      )}
-      {editingExpense && (
+      </Modal>
+      <Modal isOpen={!!editingExpense} onClose={() => setEditingExpense(null)} maxWidth="3xl">
         <ExpenseForm onSubmit={async (d) => { await onUpdateExpense(editingExpense.id, d); setEditingExpense(null); }} onCancel={() => setEditingExpense(null)} exchangeRates={exchangeRates} accounts={accounts.map(a => ({ name: a.name, currency: a.currency }))} editData={editingExpense} />
-      )}
+      </Modal>
+      <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)} maxWidth="3xl">
+        {addFormType === 'income' ? (
+          <IncomeForm onSubmit={async (d) => { await onAddIncome(d); setShowAddForm(false); }} onCancel={() => setShowAddForm(false)} exchangeRates={exchangeRates} accounts={accounts.map(a => ({ name: a.name, currency: a.currency }))} />
+        ) : (
+          <ExpenseForm onSubmit={async (d) => { await onAddExpense(d); setShowAddForm(false); }} onCancel={() => setShowAddForm(false)} exchangeRates={exchangeRates} accounts={accounts.map(a => ({ name: a.name, currency: a.currency }))} />
+        )}
+      </Modal>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -241,11 +251,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
                 <Download className="w-3.5 h-3.5" /> Export
               </button>
-              <button onClick={onAddIncome} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
-                <Upload className="w-3.5 h-3.5" /> Import
+              <button onClick={() => { setAddFormType('expense'); setShowAddForm(true); }} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors">
+                <Upload className="w-3.5 h-3.5" /> Add Expense
               </button>
-              <button onClick={onAddIncome} className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors">
-                <Plus className="w-3.5 h-3.5" /> Add Transaction
+              <button onClick={() => { setAddFormType('income'); setShowAddForm(true); }} className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors">
+                <Plus className="w-3.5 h-3.5" /> Add Income
               </button>
             </div>
           </div>

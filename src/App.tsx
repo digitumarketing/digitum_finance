@@ -97,8 +97,8 @@ function AppRoutes() {
               onDeleteExpense={deleteExpense}
               onUpdateIncome={updateIncome}
               onUpdateExpense={updateExpense}
-              onAddIncome={() => navigate('/income')}
-              onAddExpense={() => navigate('/expenses')}
+              onAddIncome={addIncome}
+              onAddExpense={addExpense}
             />
           }
         />

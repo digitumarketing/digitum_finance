@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { IncomeForm } from '../components/IncomeForm';
 import { DataTable } from '../components/DataTable';
+import { Modal } from '../components/Modal';
 import { Plus, Trash2 } from 'lucide-react';
 
 interface IncomeProps {
@@ -79,8 +80,15 @@ export const Income: React.FC<IncomeProps> = ({
         </div>
       </div>
 
-      {/* Income Form */}
-      {showForm && (
+      {/* Income Form Modal */}
+      <Modal
+        isOpen={showForm}
+        onClose={() => {
+          setShowForm(false);
+          setEditingIncome(null);
+        }}
+        maxWidth="3xl"
+      >
         <IncomeForm
           onSubmit={handleSubmit}
           onCancel={() => {
@@ -91,7 +99,7 @@ export const Income: React.FC<IncomeProps> = ({
           accounts={accounts.map(acc => ({ name: acc.name, currency: acc.currency }))}
           editData={editingIncome}
         />
-      )}
+      </Modal>
 
       {/* Income Table */}
       <DataTable

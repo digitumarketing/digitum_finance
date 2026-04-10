@@ -27,6 +27,8 @@ interface OfficeContextValue {
 const OfficeContext = createContext<OfficeContextValue | null>(null);
 
 const STORAGE_KEY = 'digitum_selected_office_id';
+const EDGE_FN_URL = 'https://cfuschemltpuelbqqnbh.supabase.co/functions/v1/offices-api';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmdXNjaGVtbHRwdWVsYnFxbmJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NDk4MjIsImV4cCI6MjA4MzAyNTgyMn0.dEy4682tKl4oT2HY7wOKkHZZ2rSWsq-8X68sA0RxezA';
 
 const mapRow = (row: any): Office => ({
   id: row.id,
@@ -37,6 +39,30 @@ const mapRow = (row: any): Office => ({
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
+
+async function getAuthToken(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+}
+
+async function callEdge(method: string, body?: Record<string, unknown>): Promise<any> {
+  const token = await getAuthToken();
+  if (!token) throw new Error('Not authenticated');
+
+  const res = await fetch(EDGE_FN_URL, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'Apikey': ANON_KEY,
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || `Request failed: ${res.status}`);
+  return json;
+}
 
 export function OfficeProvider({ children }: { children: React.ReactNode }) {
   const { user, profile } = useSupabaseAuth();
@@ -54,33 +80,23 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
-      let { data: rows, error } = await supabase
-        .from('offices')
-        .select('*')
-        .order('created_at', { ascending: true });
+      let rows = await callEdge('GET');
 
-      if (error) throw error;
-
-      if (!rows || rows.length === 0) {
-        const { data: inserted, error: insertError } = await supabase
-          .from('offices')
-          .insert({ name: 'Main Office', description: 'Default office', color: '#10b981', user_id: user.id, is_default: true })
-          .select('*');
-        if (insertError) throw insertError;
-        rows = inserted || [];
+      if (!Array.isArray(rows) || rows.length === 0) {
+        rows = await callEdge('POST', { action: 'ensure-default' });
       }
 
-      if (!rows || rows.length === 0) {
+      if (!Array.isArray(rows) || rows.length === 0) {
         setIsLoading(false);
         return;
       }
 
-      const mapped = rows.map(mapRow);
+      const mapped: Office[] = rows.map(mapRow);
       setOffices(mapped);
 
       const storedId = localStorage.getItem(`${STORAGE_KEY}_${user.id}`);
-      const stored = mapped.find((o: Office) => o.id === storedId);
-      const defaultOffice = mapped.find((o: Office) => o.isDefault);
+      const stored = mapped.find((o) => o.id === storedId);
+      const defaultOffice = mapped.find((o) => o.isDefault);
       const toSelect = stored || defaultOffice || mapped[0];
 
       if (toSelect) {
@@ -105,7 +121,7 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id, profile?.is_active]);
 
   const switchOffice = useCallback((officeId: string) => {
-    const office = offices.find(o => o.id === officeId);
+    const office = offices.find((o) => o.id === officeId);
     if (office) {
       setSelectedOffice(office);
       if (user) localStorage.setItem(`${STORAGE_KEY}_${user.id}`, officeId);
@@ -113,36 +129,29 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
   }, [offices, user]);
 
   const createOffice = useCallback(async (data: { name: string; description?: string; color?: string }): Promise<Office> => {
-    if (!user) throw new Error('Not authenticated');
-    const { data: row, error } = await supabase
-      .from('offices')
-      .insert({ name: data.name, description: data.description || '', color: data.color || '#10b981', user_id: user.id, is_default: false })
-      .select('*')
-      .single();
-    if (error) throw error;
+    const row = await callEdge('POST', {
+      name: data.name,
+      description: data.description || '',
+      color: data.color || '#10b981',
+    });
     const office = mapRow(row);
-    setOffices(prev => [...prev, office]);
+    setOffices((prev) => [...prev, office]);
     return office;
-  }, [user]);
+  }, []);
 
   const updateOffice = useCallback(async (id: string, data: { name?: string; description?: string; color?: string }) => {
-    const { error } = await supabase
-      .from('offices')
-      .update({ ...data, updated_at: new Date().toISOString() })
-      .eq('id', id);
-    if (error) throw error;
-    setOffices(prev => prev.map(o => o.id === id ? { ...o, ...data } : o));
-    setSelectedOffice(prev => prev?.id === id ? { ...prev, ...data } as Office : prev);
+    await callEdge('PATCH', { id, ...data });
+    setOffices((prev) => prev.map((o) => o.id === id ? { ...o, ...data } : o));
+    setSelectedOffice((prev) => prev?.id === id ? { ...prev, ...data } as Office : prev);
   }, []);
 
   const deleteOffice = useCallback(async (id: string) => {
     if (offices.length <= 1) throw new Error('Cannot delete the last office');
-    const { error } = await supabase.from('offices').delete().eq('id', id);
-    if (error) throw error;
-    const remaining = offices.filter(o => o.id !== id);
+    await callEdge('DELETE', { id });
+    const remaining = offices.filter((o) => o.id !== id);
     setOffices(remaining);
     if (selectedOffice?.id === id) {
-      const next = remaining.find(o => o.isDefault) || remaining[0];
+      const next = remaining.find((o) => o.isDefault) || remaining[0];
       if (next && user) {
         setSelectedOffice(next);
         localStorage.setItem(`${STORAGE_KEY}_${user.id}`, next.id);
@@ -151,11 +160,9 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
   }, [offices, selectedOffice, user]);
 
   const setDefaultOffice = useCallback(async (id: string) => {
-    if (!user) throw new Error('Not authenticated');
-    await supabase.from('offices').update({ is_default: false }).eq('user_id', user.id);
-    await supabase.from('offices').update({ is_default: true }).eq('id', id);
-    setOffices(prev => prev.map(o => ({ ...o, isDefault: o.id === id })));
-  }, [user]);
+    await callEdge('POST', { action: 'set-default', id });
+    setOffices((prev) => prev.map((o) => ({ ...o, isDefault: o.id === id })));
+  }, []);
 
   const refreshOffices = useCallback(async () => {
     await loadOffices();

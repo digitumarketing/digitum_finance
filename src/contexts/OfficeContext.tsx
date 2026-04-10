@@ -27,7 +27,6 @@ interface OfficeContextValue {
 const OfficeContext = createContext<OfficeContextValue | null>(null);
 
 const STORAGE_KEY = 'digitum_selected_office_id';
-const API_URL = 'https://cfuschemltpuelbqqnbh.supabase.co/functions/v1/offices-api';
 
 const mapRow = (row: any): Office => ({
   id: row.id,
@@ -39,26 +38,12 @@ const mapRow = (row: any): Office => ({
   updatedAt: row.updated_at,
 });
 
-async function getAuthHeader(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  return token ? `Bearer ${token}` : null;
-}
-
-async function callApi(method: string, body?: unknown, params?: string): Promise<any> {
-  const auth = await getAuthHeader();
-  if (!auth) throw new Error('Not authenticated');
-  const url = params ? `${API_URL}?${params}` : API_URL;
-  const res = await fetch(url, {
+async function callApi(method: string, body?: unknown): Promise<any> {
+  const { data, error } = await supabase.functions.invoke('offices-api', {
     method,
-    headers: {
-      'Authorization': auth,
-      'Content-Type': 'application/json',
-    },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ?? undefined,
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Request failed');
+  if (error) throw new Error(error.message || 'Request failed');
   return data;
 }
 
@@ -81,7 +66,7 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
       let rows: any[] = await callApi('GET');
 
       if (!rows || rows.length === 0) {
-        rows = await callApi('POST', null, 'action=ensure-default');
+        rows = await callApi('POST', { action: 'ensure-default' });
       }
 
       if (!rows || rows.length === 0) {
@@ -158,7 +143,7 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
   }, [offices, selectedOffice, user]);
 
   const setDefaultOffice = useCallback(async (id: string) => {
-    await callApi('POST', { id }, 'action=set-default');
+    await callApi('POST', { action: 'set-default', id });
     setOffices(prev => prev.map(o => ({ ...o, isDefault: o.id === id })));
   }, []);
 

@@ -14,7 +14,7 @@ function json(data: unknown, status = 200) {
   });
 }
 
-async function getUserId(authHeader: string): Promise<string | null> {
+function getUserId(authHeader: string): string | null {
   try {
     const token = authHeader.replace("Bearer ", "");
     const parts = token.split(".");
@@ -37,17 +37,27 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Unauthorized" }, 401);
 
-    const userId = await getUserId(authHeader);
+    const userId = getUserId(authHeader);
     if (!userId) return json({ error: "Unauthorized" }, 401);
 
     const dbUrl = Deno.env.get("SUPABASE_DB_URL");
     if (!dbUrl) return json({ error: "Database not configured" }, 500);
 
-    sql = postgres(dbUrl, { ssl: "require", max: 1, idle_timeout: 5 });
+    sql = postgres(dbUrl, { ssl: "require", max: 1, idle_timeout: 5, connect_timeout: 10 });
 
-    const url = new URL(req.url);
-    const action = url.searchParams.get("action");
     const method = req.method;
+    let body: Record<string, any> = {};
+
+    if (method !== "GET") {
+      try {
+        const text = await req.text();
+        body = text ? JSON.parse(text) : {};
+      } catch {
+        body = {};
+      }
+    }
+
+    const action = body.action;
 
     if (method === "GET") {
       const rows = await sql`
@@ -75,7 +85,6 @@ Deno.serve(async (req: Request) => {
     }
 
     if (method === "POST" && action === "set-default") {
-      const body = await req.json();
       const { id } = body;
       await sql`UPDATE offices SET is_default = false WHERE user_id = ${userId}`;
       await sql`UPDATE offices SET is_default = true WHERE id = ${id} AND user_id = ${userId}`;
@@ -83,7 +92,6 @@ Deno.serve(async (req: Request) => {
     }
 
     if (method === "POST") {
-      const body = await req.json();
       const { name, description = "", color = "#10b981" } = body;
       const rows = await sql`
         INSERT INTO offices (name, description, color, user_id, is_default)
@@ -94,7 +102,6 @@ Deno.serve(async (req: Request) => {
     }
 
     if (method === "PATCH") {
-      const body = await req.json();
       const { id, name, description, color } = body;
       await sql`
         UPDATE offices SET
@@ -108,7 +115,6 @@ Deno.serve(async (req: Request) => {
     }
 
     if (method === "DELETE") {
-      const body = await req.json();
       const { id } = body;
       await sql`DELETE FROM offices WHERE id = ${id} AND user_id = ${userId}`;
       return json({ success: true });
@@ -119,6 +125,8 @@ Deno.serve(async (req: Request) => {
     const message = err instanceof Error ? err.message : "Internal server error";
     return json({ error: message }, 500);
   } finally {
-    if (sql) await sql.end({ timeout: 2 });
+    if (sql) {
+      try { await sql.end({ timeout: 2 }); } catch { /* ignore */ }
+    }
   }
 });

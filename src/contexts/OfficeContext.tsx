@@ -28,21 +28,21 @@ const OfficeContext = createContext<OfficeContextValue | null>(null);
 
 const STORAGE_KEY = 'digitum_selected_office_id';
 
+const mapRow = (row: any): Office => ({
+  id: row.id,
+  name: row.name,
+  description: row.description || '',
+  color: row.color || '#10b981',
+  isDefault: row.is_default,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
 export function OfficeProvider({ children }: { children: React.ReactNode }) {
   const { user, profile } = useSupabaseAuth();
   const [offices, setOffices] = useState<Office[]>([]);
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const mapRow = (row: any): Office => ({
-    id: row.id,
-    name: row.name,
-    description: row.description || '',
-    color: row.color || '#10b981',
-    isDefault: row.is_default,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  });
 
   const loadOffices = useCallback(async () => {
     if (!user || !profile?.is_active) {
@@ -54,11 +54,7 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('offices')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
+      const { data, error } = await supabase.rpc('get_my_offices');
 
       if (error) {
         console.error('Error loading offices:', error);
@@ -66,7 +62,21 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const mapped = (data || []).map(mapRow);
+      if (!data || data.length === 0) {
+        const { data: ensured, error: ensureError } = await supabase.rpc('ensure_my_default_office');
+        if (ensureError || !ensured || ensured.length === 0) {
+          setIsLoading(false);
+          return;
+        }
+        const mapped = ensured.map(mapRow);
+        setOffices(mapped);
+        setSelectedOffice(mapped[0]);
+        if (user) localStorage.setItem(`${STORAGE_KEY}_${user.id}`, mapped[0].id);
+        setIsLoading(false);
+        return;
+      }
+
+      const mapped = (data as any[]).map(mapRow);
       setOffices(mapped);
 
       const storedId = localStorage.getItem(`${STORAGE_KEY}_${user.id}`);
@@ -78,32 +88,11 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
       if (toSelect) {
         setSelectedOffice(toSelect);
         localStorage.setItem(`${STORAGE_KEY}_${user.id}`, toSelect.id);
-      } else if (user) {
-        const created = await ensureDefaultOffice(user.id);
-        if (created) {
-          setOffices([created]);
-          setSelectedOffice(created);
-          localStorage.setItem(`${STORAGE_KEY}_${user.id}`, created.id);
-        }
       }
     } finally {
       setIsLoading(false);
     }
   }, [user, profile]);
-
-  const ensureDefaultOffice = async (userId: string): Promise<Office | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('offices')
-        .insert({ name: 'Main Office', description: 'Default office', color: '#10b981', user_id: userId, is_default: true })
-        .select()
-        .single();
-      if (error) return null;
-      return mapRow(data);
-    } catch {
-      return null;
-    }
-  };
 
   useEffect(() => {
     if (user && profile?.is_active) {
@@ -125,30 +114,25 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
 
   const createOffice = useCallback(async (data: { name: string; description?: string; color?: string }): Promise<Office> => {
     if (!user) throw new Error('Not authenticated');
-    const { data: row, error } = await supabase
-      .from('offices')
-      .insert({
-        name: data.name,
-        description: data.description || '',
-        color: data.color || '#10b981',
-        user_id: user.id,
-        is_default: false,
-      })
-      .select()
-      .single();
+    const { data: rows, error } = await supabase.rpc('create_my_office', {
+      p_name: data.name,
+      p_description: data.description || '',
+      p_color: data.color || '#10b981',
+    });
     if (error) throw error;
-    const office = mapRow(row);
+    const office = mapRow((rows as any[])[0]);
     setOffices(prev => [...prev, office]);
     return office;
   }, [user]);
 
   const updateOffice = useCallback(async (id: string, data: { name?: string; description?: string; color?: string }) => {
     if (!user) throw new Error('Not authenticated');
-    const { error } = await supabase
-      .from('offices')
-      .update({ name: data.name, description: data.description, color: data.color })
-      .eq('id', id)
-      .eq('user_id', user.id);
+    const { error } = await supabase.rpc('update_my_office', {
+      p_id: id,
+      p_name: data.name ?? null,
+      p_description: data.description ?? null,
+      p_color: data.color ?? null,
+    });
     if (error) throw error;
     setOffices(prev => prev.map(o => o.id === id ? { ...o, ...data } : o));
     setSelectedOffice(prev => prev?.id === id ? { ...prev, ...data } as Office : prev);
@@ -157,11 +141,7 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
   const deleteOffice = useCallback(async (id: string) => {
     if (!user) throw new Error('Not authenticated');
     if (offices.length <= 1) throw new Error('Cannot delete the last office');
-    const { error } = await supabase
-      .from('offices')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
+    const { error } = await supabase.rpc('delete_my_office', { p_id: id });
     if (error) throw error;
     const remaining = offices.filter(o => o.id !== id);
     setOffices(remaining);
@@ -176,8 +156,8 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
 
   const setDefaultOffice = useCallback(async (id: string) => {
     if (!user) throw new Error('Not authenticated');
-    await supabase.from('offices').update({ is_default: false }).eq('user_id', user.id);
-    await supabase.from('offices').update({ is_default: true }).eq('id', id).eq('user_id', user.id);
+    const { error } = await supabase.rpc('set_my_default_office', { p_id: id });
+    if (error) throw error;
     setOffices(prev => prev.map(o => ({ ...o, isDefault: o.id === id })));
   }, [user]);
 

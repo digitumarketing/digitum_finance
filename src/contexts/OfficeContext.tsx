@@ -38,27 +38,6 @@ const mapRow = (row: any): Office => ({
   updatedAt: row.updated_at,
 });
 
-async function callEdge<T = any>(
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
-  body?: Record<string, any>
-): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('offices-api', {
-    method,
-    body,
-  });
-
-  if (error) {
-    const msg = (error as any)?.message || String(error);
-    throw new Error(`Office API error: ${msg}`);
-  }
-
-  if (data && typeof data === 'object' && 'error' in data) {
-    throw new Error(`Office API error: ${data.error}`);
-  }
-
-  return data as T;
-}
-
 export function OfficeProvider({ children }: { children: React.ReactNode }) {
   const { user, profile } = useSupabaseAuth();
   const [offices, setOffices] = useState<Office[]>([]);
@@ -75,18 +54,33 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
-      let rows: any[] = await callEdge('GET');
+      const { data, error } = await supabase
+        .from('offices')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
 
-      if (!rows || rows.length === 0) {
-        rows = await callEdge('POST', { action: 'ensure-default' });
+      if (error) throw error;
+
+      let rows = data ?? [];
+
+      if (rows.length === 0) {
+        const { data: created, error: createError } = await supabase
+          .from('offices')
+          .insert({
+            name: 'Main Office',
+            description: 'Default office',
+            color: '#10b981',
+            user_id: user.id,
+            is_default: true,
+          })
+          .select()
+          .single();
+        if (createError) throw createError;
+        rows = [created];
       }
 
-      if (!rows || rows.length === 0) {
-        setIsLoading(false);
-        return;
-      }
-
-      const mapped: Office[] = rows.map(mapRow);
+      const mapped = rows.map(mapRow);
       setOffices(mapped);
 
       const storedId = localStorage.getItem(`${STORAGE_KEY}_${user.id}`);
@@ -99,7 +93,7 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem(`${STORAGE_KEY}_${user.id}`, toSelect.id);
       }
     } catch (err: any) {
-      console.error('Error loading offices:', err?.message || err);
+      console.error('Failed to load offices:', err?.message || err);
     } finally {
       setIsLoading(false);
     }
@@ -124,31 +118,55 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
   }, [offices, user]);
 
   const createOffice = useCallback(async (data: { name: string; description?: string; color?: string }): Promise<Office> => {
-    const row = await callEdge<any>('POST', {
-      name: data.name,
-      description: data.description || '',
-      color: data.color || '#10b981',
-    });
-    if (!row || !row.id) throw new Error('Office was not created — no row returned');
+    if (!user) throw new Error('Not authenticated');
+    const { data: row, error } = await supabase
+      .from('offices')
+      .insert({
+        name: data.name.trim(),
+        description: data.description?.trim() || '',
+        color: data.color || '#10b981',
+        user_id: user.id,
+        is_default: false,
+      })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error('Office was not created — no row returned');
     const office = mapRow(row);
     setOffices((prev) => [...prev, office]);
     return office;
-  }, []);
+  }, [user]);
 
   const updateOffice = useCallback(async (id: string, data: { name?: string; description?: string; color?: string }) => {
-    await callEdge('PATCH', { id, ...data });
+    if (!user) throw new Error('Not authenticated');
+    const updates: Record<string, any> = {};
+    if (data.name !== undefined) updates.name = data.name.trim();
+    if (data.description !== undefined) updates.description = data.description.trim();
+    if (data.color !== undefined) updates.color = data.color;
+    const { error } = await supabase
+      .from('offices')
+      .update(updates)
+      .eq('id', id)
+      .eq('user_id', user.id);
+    if (error) throw new Error(error.message);
     setOffices((prev) => prev.map((o) => o.id === id ? { ...o, ...data } : o));
     setSelectedOffice((prev) => prev?.id === id ? { ...prev, ...data } as Office : prev);
-  }, []);
+  }, [user]);
 
   const deleteOffice = useCallback(async (id: string) => {
+    if (!user) throw new Error('Not authenticated');
     if (offices.length <= 1) throw new Error('Cannot delete the last office');
-    await callEdge('DELETE', { id });
+    const { error } = await supabase
+      .from('offices')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+    if (error) throw new Error(error.message);
     const remaining = offices.filter((o) => o.id !== id);
     setOffices(remaining);
     if (selectedOffice?.id === id) {
       const next = remaining.find((o) => o.isDefault) || remaining[0];
-      if (next && user) {
+      if (next) {
         setSelectedOffice(next);
         localStorage.setItem(`${STORAGE_KEY}_${user.id}`, next.id);
       }
@@ -156,9 +174,21 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
   }, [offices, selectedOffice, user]);
 
   const setDefaultOffice = useCallback(async (id: string) => {
-    await callEdge('POST', { action: 'set-default', id });
+    if (!user) throw new Error('Not authenticated');
+    const { error: clearError } = await supabase
+      .from('offices')
+      .update({ is_default: false })
+      .eq('user_id', user.id)
+      .neq('id', id);
+    if (clearError) throw new Error(clearError.message);
+    const { error: setError } = await supabase
+      .from('offices')
+      .update({ is_default: true })
+      .eq('id', id)
+      .eq('user_id', user.id);
+    if (setError) throw new Error(setError.message);
     setOffices((prev) => prev.map((o) => ({ ...o, isDefault: o.id === id })));
-  }, []);
+  }, [user]);
 
   const refreshOffices = useCallback(async () => {
     await loadOffices();

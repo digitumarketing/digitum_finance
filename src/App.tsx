@@ -11,14 +11,11 @@ import { Expenses } from './pages/Expenses';
 import { Accounts } from './pages/Accounts';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
-import { OfficeProvider, useOfficeContext } from './contexts/OfficeContext';
 import { AlertTriangle } from 'lucide-react';
 
 function AppRoutes() {
   const { profile } = useSupabaseAuth();
-  const { selectedOffice, isLoading: officeLoading } = useOfficeContext();
   const isSuperAdmin = profile?.role === 'super_admin';
-  const officeId = selectedOffice?.id || null;
 
   const {
     income,
@@ -54,18 +51,7 @@ function AppRoutes() {
     bulkImportExpenses,
     deleteAllIncome,
     deleteAllExpenses,
-  } = useSupabaseData(officeId);
-
-  if (officeLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading offices...</p>
-        </div>
-      </div>
-    );
-  }
+  } = useSupabaseData();
 
   if (isLoading) {
     return (
@@ -261,9 +247,7 @@ function App() {
 
   return (
     <SecurityProvider user={profile}>
-      <OfficeProvider>
-        <AppContent />
-      </OfficeProvider>
+      <AppContent />
     </SecurityProvider>
   );
 }

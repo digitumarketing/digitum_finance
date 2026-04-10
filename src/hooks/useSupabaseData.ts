@@ -11,7 +11,7 @@ import {
 } from '../types';
 import { getCurrentMonth, calculateConvertedAmount, convertAccountingMonthToYYYYMM } from '../utils/helpers';
 
-export const useSupabaseData = (officeId: string | null) => {
+export const useSupabaseData = () => {
   const { user, profile } = useSupabaseAuth();
   const [income, setIncome] = useState<Income[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -69,8 +69,8 @@ export const useSupabaseData = (officeId: string | null) => {
   }, [user, selectedMonth]);
 
   useEffect(() => {
-    if (user && profile && profile.is_active && officeId) {
-      const loadKey = `${user.id}-${officeId}`;
+    if (user && profile && profile.is_active) {
+      const loadKey = user.id;
       if (hasLoadedDataRef.current !== loadKey) {
         hasLoadedDataRef.current = loadKey;
         loadAllData();
@@ -92,12 +92,12 @@ export const useSupabaseData = (officeId: string | null) => {
       });
       setIsLoading(false);
     }
-  }, [user, profile, officeId]);
+  }, [user, profile]);
 
   useEffect(() => {
     if (!user || !profile?.is_active) return;
     const channel = supabase
-      .channel(`notifications-${user.id}-${officeId}`)
+      .channel(`notifications-${user.id}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -105,7 +105,6 @@ export const useSupabaseData = (officeId: string | null) => {
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
         const notif = payload.new as any;
-        if (notif.office_id && notif.office_id !== officeId) return;
         const scheduledFor = notif.scheduled_for ? new Date(notif.scheduled_for) : null;
         if (!scheduledFor || scheduledFor <= new Date()) {
           setNotifications(prev => {
@@ -121,10 +120,10 @@ export const useSupabaseData = (officeId: string | null) => {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user, profile, officeId]);
+  }, [user, profile]);
 
   const loadAllData = useCallback(async () => {
-    if (!user?.id || !profile?.is_active || !officeId) {
+    if (!user?.id || !profile?.is_active) {
       setIsLoading(false);
       return;
     }
@@ -138,15 +137,15 @@ export const useSupabaseData = (officeId: string | null) => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, profile, officeId]);
+  }, [user, profile]);
 
   const loadAccounts = useCallback(async () => {
-    if (!user || !profile?.is_active || !officeId) return;
+    if (!user || !profile?.is_active) return;
     try {
       const { data, error } = await supabase
         .from('accounts')
         .select('*')
-        .eq('office_id', officeId)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       if (error) { console.error('Error loading accounts:', error); return; }
       setAccounts(data.map(account => ({
@@ -159,28 +158,28 @@ export const useSupabaseData = (officeId: string | null) => {
         notes: account.notes || '',
       })));
     } catch (error) { console.error('Error in loadAccounts:', error); }
-  }, [user, profile, officeId]);
+  }, [user, profile]);
 
   const loadExchangeRates = useCallback(async () => {
-    if (!user || !profile?.is_active || !officeId) return;
+    if (!user || !profile?.is_active) return;
     try {
       const { data, error } = await supabase
         .from('exchange_rates')
         .select('*')
-        .eq('office_id', officeId)
+        .eq('user_id', user.id)
         .order('currency', { ascending: true });
       if (error) { console.error('Error loading exchange rates:', error); return; }
       const rates: ExchangeRates = { PKR: 1 };
       data.forEach(rate => { rates[rate.currency] = parseFloat(rate.rate); });
       setExchangeRates(rates);
     } catch (error) { console.error('Error in loadExchangeRates:', error); }
-  }, [user, profile, officeId]);
+  }, [user, profile]);
 
   const loadIncome = useCallback(async () => {
-    if (!user || !profile?.is_active || !officeId) return;
+    if (!user || !profile?.is_active) return;
     try {
       const isSuperAdmin = profile.role === 'super_admin';
-      let query = supabase.from('income').select('*').eq('office_id', officeId).order('date', { ascending: false });
+      let query = supabase.from('income').select('*').order('date', { ascending: false });
       if (!isSuperAdmin) { query = query.eq('user_id', user.id); }
       const { data, error } = await query;
       if (error) { console.error('Error loading income:', error); return; }
@@ -207,13 +206,13 @@ export const useSupabaseData = (officeId: string | null) => {
         createdAt: item.created_at, updatedAt: item.updated_at,
       })));
     } catch (error) { console.error('Error in loadIncome:', error); }
-  }, [user, profile, officeId]);
+  }, [user, profile]);
 
   const loadExpenses = useCallback(async () => {
-    if (!user || !profile?.is_active || !officeId) return;
+    if (!user || !profile?.is_active) return;
     try {
       const isSuperAdmin = profile.role === 'super_admin';
-      let query = supabase.from('expenses').select('*').eq('office_id', officeId).order('date', { ascending: false });
+      let query = supabase.from('expenses').select('*').order('date', { ascending: false });
       if (!isSuperAdmin) { query = query.eq('user_id', user.id); }
       const { data, error } = await query;
       if (error) { console.error('Error loading expenses:', error); return; }
@@ -237,17 +236,16 @@ export const useSupabaseData = (officeId: string | null) => {
         createdAt: item.created_at, updatedAt: item.updated_at,
       })));
     } catch (error) { console.error('Error in loadExpenses:', error); }
-  }, [user, profile, officeId]);
+  }, [user, profile]);
 
   const loadNotifications = useCallback(async () => {
-    if (!user || !profile?.is_active || !officeId) return;
+    if (!user || !profile?.is_active) return;
     try {
       const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
-        .eq('office_id', officeId)
         .or(`scheduled_for.is.null,scheduled_for.lte.${now}`)
         .order('created_at', { ascending: false });
       if (error) { console.error('Error loading notifications:', error); return; }
@@ -258,7 +256,7 @@ export const useSupabaseData = (officeId: string | null) => {
         channels: notif.channels || [], metadata: notif.metadata || {},
       })));
     } catch (error) { console.error('Error in loadNotifications:', error); }
-  }, [user, profile, officeId]);
+  }, [user, profile]);
 
   useEffect(() => {
     if (!user || !profile?.is_active) return;
@@ -291,7 +289,7 @@ export const useSupabaseData = (officeId: string | null) => {
   }, [user, profile]);
 
   const addIncome = useCallback(async (incomeData: any) => {
-    if (!user || !officeId) return;
+    if (!user) return;
     try {
       const account = accounts.find(acc => acc.name === incomeData.account);
       const accountCurrency = account?.currency || 'PKR';
@@ -315,7 +313,6 @@ export const useSupabaseData = (officeId: string | null) => {
       }
       const { data, error } = await supabase.from('income').insert({
         user_id: user.id,
-        office_id: officeId,
         date: incomeData.date,
         original_amount: incomeData.originalAmount,
         currency: accountCurrency,
@@ -339,7 +336,6 @@ export const useSupabaseData = (officeId: string | null) => {
       if (incomeData.status === 'Upcoming' && incomeData.dueDate) {
         await supabase.from('notifications').insert({
           user_id: user.id,
-          office_id: officeId,
           type: 'income_due',
           title: `Payment Due: ${incomeData.clientName}`,
           message: `Expected payment of ${incomeData.originalAmount} ${accountCurrency} from ${incomeData.clientName} is due on ${new Date(incomeData.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`,
@@ -355,7 +351,7 @@ export const useSupabaseData = (officeId: string | null) => {
       await updateAccountBalances();
       return data;
     } catch (error) { console.error('Error in addIncome:', error); throw error; }
-  }, [user, officeId, accounts, exchangeRates]);
+  }, [user, accounts, exchangeRates]);
 
   const updateIncome = useCallback(async (id: string, updates: any) => {
     if (!user) return;
@@ -426,18 +422,18 @@ export const useSupabaseData = (officeId: string | null) => {
   }, [user]);
 
   const deleteAllIncome = useCallback(async () => {
-    if (!user || !officeId) return;
+    if (!user) return;
     try {
-      const { error } = await supabase.from('income').delete().eq('user_id', user.id).eq('office_id', officeId);
+      const { error } = await supabase.from('income').delete().eq('user_id', user.id);
       if (error) throw error;
       await loadIncome();
       await loadExpenses();
       await loadAccounts();
     } catch (error) { console.error('Error in deleteAllIncome:', error); throw error; }
-  }, [user, officeId, loadIncome, loadExpenses, loadAccounts]);
+  }, [user, loadIncome, loadExpenses, loadAccounts]);
 
   const addExpense = useCallback(async (expenseData: any) => {
-    if (!user || !officeId) return;
+    if (!user) return;
     try {
       const account = accounts.find(acc => acc.name === expenseData.account);
       const accountCurrency = account?.currency || 'PKR';
@@ -448,7 +444,6 @@ export const useSupabaseData = (officeId: string | null) => {
       }
       const { data, error } = await supabase.from('expenses').insert({
         user_id: user.id,
-        office_id: officeId,
         date: expenseData.date,
         amount: expenseData.amount,
         currency: accountCurrency,
@@ -467,7 +462,6 @@ export const useSupabaseData = (officeId: string | null) => {
       if (expenseData.paymentStatus === 'Pending' && expenseData.dueDate) {
         await supabase.from('notifications').insert({
           user_id: user.id,
-          office_id: officeId,
           type: 'expense_due',
           title: `Expense Due: ${expenseData.description}`,
           message: `Payment of ${expenseData.amount} ${accountCurrency} for "${expenseData.description}" is due on ${new Date(expenseData.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`,
@@ -483,7 +477,7 @@ export const useSupabaseData = (officeId: string | null) => {
       await updateAccountBalances();
       return data;
     } catch (error) { console.error('Error in addExpense:', error); throw error; }
-  }, [user, officeId, accounts, exchangeRates]);
+  }, [user, accounts, exchangeRates]);
 
   const updateExpense = useCallback(async (id: string, updates: any) => {
     if (!user) return;
@@ -527,15 +521,15 @@ export const useSupabaseData = (officeId: string | null) => {
   }, [user]);
 
   const deleteAllExpenses = useCallback(async () => {
-    if (!user || !officeId) return;
+    if (!user) return;
     try {
-      const { error } = await supabase.from('expenses').delete().eq('user_id', user.id).eq('office_id', officeId);
+      const { error } = await supabase.from('expenses').delete().eq('user_id', user.id);
       if (error) throw error;
       await loadIncome();
       await loadExpenses();
       await loadAccounts();
     } catch (error) { console.error('Error in deleteAllExpenses:', error); throw error; }
-  }, [user, officeId, loadIncome, loadExpenses, loadAccounts]);
+  }, [user, loadIncome, loadExpenses, loadAccounts]);
 
   const updateAccountBalance = useCallback(async (id: string, newBalance: number) => {
     if (!user) return;
@@ -584,11 +578,10 @@ export const useSupabaseData = (officeId: string | null) => {
   }, [user, accounts, income, expenses, exchangeRates]);
 
   const addAccount = useCallback(async (accountData: Omit<Account, 'id'>) => {
-    if (!user || !officeId) return;
+    if (!user) return;
     try {
       const { data, error } = await supabase.from('accounts').insert({
         user_id: user.id,
-        office_id: officeId,
         name: accountData.name,
         currency: accountData.currency,
         balance: 0,
@@ -599,7 +592,7 @@ export const useSupabaseData = (officeId: string | null) => {
       await loadAccounts();
       return data;
     } catch (error) { console.error('Error in addAccount:', error); throw error; }
-  }, [user, officeId, exchangeRates]);
+  }, [user, exchangeRates]);
 
   const deleteAccount = useCallback(async (id: string) => {
     if (!user) return;
@@ -611,33 +604,32 @@ export const useSupabaseData = (officeId: string | null) => {
   }, [user]);
 
   const updateExchangeRates = useCallback(async (newRates: ExchangeRates) => {
-    if (!user || !officeId) return;
+    if (!user) return;
     try {
       const { data: existingRates, error: fetchError } = await supabase
-        .from('exchange_rates').select('currency').eq('office_id', officeId);
+        .from('exchange_rates').select('currency').eq('user_id', user.id);
       if (fetchError) throw fetchError;
       const existingCurrencies = existingRates?.map(r => r.currency) || [];
       const newCurrencies = Object.keys(newRates).filter(c => c !== 'PKR');
       const currenciesToDelete = existingCurrencies.filter(currency => !newCurrencies.includes(currency));
       if (currenciesToDelete.length > 0) {
-        const { error: deleteError } = await supabase.from('exchange_rates').delete().eq('office_id', officeId).in('currency', currenciesToDelete);
+        const { error: deleteError } = await supabase.from('exchange_rates').delete().eq('user_id', user.id).in('currency', currenciesToDelete);
         if (deleteError) throw deleteError;
       }
       const upsertData = Object.entries(newRates).filter(([currency]) => currency !== 'PKR').map(([currency, rate]) => ({
         user_id: user.id,
-        office_id: officeId,
         currency,
         rate,
         updated_by: user.id,
       }));
       if (upsertData.length > 0) {
-        const { error: upsertError } = await supabase.from('exchange_rates').upsert(upsertData, { onConflict: 'office_id,currency' });
+        const { error: upsertError } = await supabase.from('exchange_rates').upsert(upsertData, { onConflict: 'user_id,currency' });
         if (upsertError) throw upsertError;
       }
       await loadExchangeRates();
       await updateAccountBalances();
     } catch (error) { console.error('Error in updateExchangeRates:', error); throw error; }
-  }, [user, officeId, loadExchangeRates, updateAccountBalances]);
+  }, [user, loadExchangeRates, updateAccountBalances]);
 
   const markNotificationAsRead = useCallback(async (id: string) => {
     if (!user) return;
@@ -649,13 +641,13 @@ export const useSupabaseData = (officeId: string | null) => {
   }, [user]);
 
   const markAllNotificationsAsRead = useCallback(async () => {
-    if (!user || !officeId) return;
+    if (!user) return;
     try {
-      const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('office_id', officeId).eq('is_read', false);
+      const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
       if (error) throw error;
       setNotifications(prev => prev.map(notif => ({ ...notif, isRead: true })));
     } catch (error) { console.error('Error in markAllNotificationsAsRead:', error); throw error; }
-  }, [user, officeId]);
+  }, [user]);
 
   const deleteNotification = useCallback(async (id: string) => {
     if (!user) return;
@@ -667,13 +659,13 @@ export const useSupabaseData = (officeId: string | null) => {
   }, [user]);
 
   const clearAllNotifications = useCallback(async () => {
-    if (!user || !officeId) return;
+    if (!user) return;
     try {
-      const { error } = await supabase.from('notifications').delete().eq('user_id', user.id).eq('office_id', officeId);
+      const { error } = await supabase.from('notifications').delete().eq('user_id', user.id);
       if (error) throw error;
       setNotifications([]);
     } catch (error) { console.error('Error in clearAllNotifications:', error); throw error; }
-  }, [user, officeId]);
+  }, [user]);
 
   const updateNotificationSettingsAsync = useCallback(async (settings: NotificationSettings) => {
     if (!user) return;
@@ -695,11 +687,10 @@ export const useSupabaseData = (officeId: string | null) => {
   }, [user]);
 
   const addNotification = useCallback(async (notification: Omit<Notification, 'id' | 'createdAt'>) => {
-    if (!user || !officeId) return;
+    if (!user) return;
     try {
       const { data, error } = await supabase.from('notifications').insert({
         user_id: user.id,
-        office_id: officeId,
         type: notification.type,
         title: notification.title,
         message: notification.message,
@@ -714,7 +705,7 @@ export const useSupabaseData = (officeId: string | null) => {
       await loadNotifications();
       return data;
     } catch (error) { console.error('Error in addNotification:', error); throw error; }
-  }, [user, officeId]);
+  }, [user]);
 
   const bulkImportIncome = useCallback(async (incomeDataArray: any[]) => {
     if (!user) return;

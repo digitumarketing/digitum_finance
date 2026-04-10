@@ -451,28 +451,14 @@ export const useSupabaseAuth = () => {
         throw new Error(profileError.message);
       }
 
-      // Create default office for new user
-      let defaultOfficeId: string | null = null;
-      const { data: officeData, error: officeError } = await supabase
-        .from('offices')
-        .insert({ name: 'Main Office', description: 'Default office', color: '#10b981', user_id: data.user.id, is_default: true })
-        .select()
-        .single();
-
-      if (officeError) {
-        console.error('Error creating default office:', officeError);
-      } else {
-        defaultOfficeId = officeData.id;
-      }
-
       // Create default accounts for new user
       const { error: accountsError } = await supabase
         .from('accounts')
         .insert([
-          { user_id: data.user.id, office_id: defaultOfficeId, name: 'Bank Alfalah', currency: 'PKR', balance: 0, converted_balance: 0, notes: 'Main PKR account' },
-          { user_id: data.user.id, office_id: defaultOfficeId, name: 'Wise USD', currency: 'USD', balance: 0, converted_balance: 0, notes: 'USD foreign exchange account' },
-          { user_id: data.user.id, office_id: defaultOfficeId, name: 'Wise GBP', currency: 'GBP', balance: 0, converted_balance: 0, notes: 'GBP foreign exchange account' },
-          { user_id: data.user.id, office_id: defaultOfficeId, name: 'Payoneer', currency: 'USD', balance: 0, converted_balance: 0, notes: 'USD payment processing account' }
+          { user_id: data.user.id, name: 'Bank Alfalah', currency: 'PKR', balance: 0, converted_balance: 0, notes: 'Main PKR account' },
+          { user_id: data.user.id, name: 'Wise USD', currency: 'USD', balance: 0, converted_balance: 0, notes: 'USD foreign exchange account' },
+          { user_id: data.user.id, name: 'Wise GBP', currency: 'GBP', balance: 0, converted_balance: 0, notes: 'GBP foreign exchange account' },
+          { user_id: data.user.id, name: 'Payoneer', currency: 'USD', balance: 0, converted_balance: 0, notes: 'USD payment processing account' }
         ]);
 
       if (accountsError) {
@@ -483,9 +469,9 @@ export const useSupabaseAuth = () => {
       const { error: ratesError } = await supabase
         .from('exchange_rates')
         .insert([
-          { user_id: data.user.id, office_id: defaultOfficeId, currency: 'USD', rate: 278.5000, updated_by: data.user.id },
-          { user_id: data.user.id, office_id: defaultOfficeId, currency: 'AED', rate: 75.8500, updated_by: data.user.id },
-          { user_id: data.user.id, office_id: defaultOfficeId, currency: 'GBP', rate: 354.2000, updated_by: data.user.id }
+          { user_id: data.user.id, currency: 'USD', rate: 278.5000, updated_by: data.user.id },
+          { user_id: data.user.id, currency: 'AED', rate: 75.8500, updated_by: data.user.id },
+          { user_id: data.user.id, currency: 'GBP', rate: 354.2000, updated_by: data.user.id }
         ]);
 
       if (ratesError) {

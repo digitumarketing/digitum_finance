@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Navigation } from './Navigation';
 import { MonthSelector } from './MonthSelector';
 import { UserProfile } from './UserProfile';
 import { NotificationPanel } from './NotificationPanel';
-import { OfficeSwitcher } from './OfficeSwitcher';
-import { OfficeManagement } from './OfficeManagement';
 
 interface MainLayoutProps {
   selectedMonth: Date;
@@ -29,7 +27,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   onClearAllNotifications,
 }) => {
   const location = useLocation();
-  const [showOfficeManagement, setShowOfficeManagement] = useState(false);
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -51,14 +48,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       <Navigation canAccessTab={() => true} />
 
       <div className="flex-1 flex flex-col lg:ml-0 overflow-x-hidden">
-        {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-100 p-4 lg:p-6 pt-16 lg:pt-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 max-w-full">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="min-w-0">
-                <h1 className="text-xl font-semibold text-gray-900 truncate">{getPageTitle()}</h1>
-              </div>
-              <OfficeSwitcher onManageOffices={() => setShowOfficeManagement(true)} />
+            <div className="min-w-0">
+              <h1 className="text-xl font-semibold text-gray-900 truncate">{getPageTitle()}</h1>
             </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-shrink-0">
@@ -82,15 +75,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6 max-w-full overflow-x-hidden">
           <Outlet />
         </main>
       </div>
-
-      {showOfficeManagement && (
-        <OfficeManagement onClose={() => setShowOfficeManagement(false)} />
-      )}
     </div>
   );
 };

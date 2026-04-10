@@ -38,6 +38,27 @@ const mapRow = (row: any): Office => ({
   updatedAt: row.updated_at,
 });
 
+async function callEdge<T = any>(
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  body?: Record<string, any>
+): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('offices-api', {
+    method,
+    body,
+  });
+
+  if (error) {
+    const msg = (error as any)?.message || String(error);
+    throw new Error(`Office API error: ${msg}`);
+  }
+
+  if (data && typeof data === 'object' && 'error' in data) {
+    throw new Error(`Office API error: ${data.error}`);
+  }
+
+  return data as T;
+}
+
 export function OfficeProvider({ children }: { children: React.ReactNode }) {
   const { user, profile } = useSupabaseAuth();
   const [offices, setOffices] = useState<Office[]>([]);
@@ -54,14 +75,10 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
-      let { data: rows, error } = await supabase.rpc('get_my_offices');
-
-      if (error) throw error;
+      let rows: any[] = await callEdge('GET');
 
       if (!rows || rows.length === 0) {
-        const { data: ensured, error: ensureError } = await supabase.rpc('ensure_my_default_office');
-        if (ensureError) throw ensureError;
-        rows = ensured || [];
+        rows = await callEdge('POST', { action: 'ensure-default' });
       }
 
       if (!rows || rows.length === 0) {
@@ -107,34 +124,26 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
   }, [offices, user]);
 
   const createOffice = useCallback(async (data: { name: string; description?: string; color?: string }): Promise<Office> => {
-    const { data: rows, error } = await supabase.rpc('create_my_office', {
-      p_name: data.name,
-      p_description: data.description || '',
-      p_color: data.color || '#10b981',
+    const row = await callEdge<any>('POST', {
+      name: data.name,
+      description: data.description || '',
+      color: data.color || '#10b981',
     });
-    if (error) throw new Error(error.message);
-    if (!rows || rows.length === 0) throw new Error('Office was not created — no row returned');
-    const office = mapRow(rows[0]);
+    if (!row || !row.id) throw new Error('Office was not created — no row returned');
+    const office = mapRow(row);
     setOffices((prev) => [...prev, office]);
     return office;
   }, []);
 
   const updateOffice = useCallback(async (id: string, data: { name?: string; description?: string; color?: string }) => {
-    const { error } = await supabase.rpc('update_my_office', {
-      p_id: id,
-      p_name: data.name ?? null,
-      p_description: data.description ?? null,
-      p_color: data.color ?? null,
-    });
-    if (error) throw new Error(error.message);
+    await callEdge('PATCH', { id, ...data });
     setOffices((prev) => prev.map((o) => o.id === id ? { ...o, ...data } : o));
     setSelectedOffice((prev) => prev?.id === id ? { ...prev, ...data } as Office : prev);
   }, []);
 
   const deleteOffice = useCallback(async (id: string) => {
     if (offices.length <= 1) throw new Error('Cannot delete the last office');
-    const { error } = await supabase.rpc('delete_my_office', { p_id: id });
-    if (error) throw new Error(error.message);
+    await callEdge('DELETE', { id });
     const remaining = offices.filter((o) => o.id !== id);
     setOffices(remaining);
     if (selectedOffice?.id === id) {
@@ -147,8 +156,7 @@ export function OfficeProvider({ children }: { children: React.ReactNode }) {
   }, [offices, selectedOffice, user]);
 
   const setDefaultOffice = useCallback(async (id: string) => {
-    const { error } = await supabase.rpc('set_my_default_office', { p_id: id });
-    if (error) throw new Error(error.message);
+    await callEdge('POST', { action: 'set-default', id });
     setOffices((prev) => prev.map((o) => ({ ...o, isDefault: o.id === id })));
   }, []);
 
